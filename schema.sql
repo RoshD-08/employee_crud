@@ -41,7 +41,98 @@ VALUES
     ('Ishara', 'Fernando',  'ishara.fernando@company.com','070-555-2211','Human Resources','HR Manager',      190000.00, '2021-06-19')
 ON CONFLICT (email) DO NOTHING;
 
--- Add to the employees table (or run standalone if table already exists)
+-- ============================================================
+-- Migration columns — safe to re-run (ADD COLUMN IF NOT EXISTS)
+-- ============================================================
+
+-- Original location columns
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS address   TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS latitude  NUMERIC(9, 6);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS longitude NUMERIC(9, 6);
+
+-- ── Personal details ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS date_of_birth         DATE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS gender                VARCHAR(20);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS national_id           VARCHAR(50);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS emergency_contact_name  VARCHAR(100);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS emergency_contact_phone VARCHAR(20);
+
+-- ── Employment type & status ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employment_type   VARCHAR(30) DEFAULT 'Full-time';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employment_status VARCHAR(30) DEFAULT 'Active';
+
+-- ── Allowances ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS housing_allowance   NUMERIC(10, 2) DEFAULT 0;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS transport_allowance  NUMERIC(10, 2) DEFAULT 0;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS medical_allowance    NUMERIC(10, 2) DEFAULT 0;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS other_allowance      NUMERIC(10, 2) DEFAULT 0;
+
+-- ── Bank / payment details ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS payment_method       VARCHAR(30) DEFAULT 'Bank Transfer';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS bank_name            VARCHAR(100);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS bank_branch          VARCHAR(100);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS bank_account_number  VARCHAR(50);
+
+-- ── Tax & statutory ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS tax_id              VARCHAR(50);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS epf_number          VARCHAR(50);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS esi_number          VARCHAR(50);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS tax_filing_status   VARCHAR(30);
+
+-- ── Backfill sample rows with payroll data ──
+UPDATE employees SET
+    date_of_birth = '1995-07-22',
+    gender = 'Female',
+    national_id = '957221234V',
+    employment_type = 'Full-time',
+    employment_status = 'Active',
+    housing_allowance = 25000,
+    transport_allowance = 10000,
+    medical_allowance = 15000,
+    payment_method = 'Bank Transfer',
+    bank_name = 'Commercial Bank',
+    bank_branch = 'Colombo Fort',
+    bank_account_number = '1234567890',
+    tax_id = 'TIN-2023-00451',
+    epf_number = 'EPF-ENG-0011',
+    emergency_contact_name = 'Kamal Silva',
+    emergency_contact_phone = '077-999-8888'
+WHERE email = 'amara.silva@company.com' AND date_of_birth IS NULL;
+
+UPDATE employees SET
+    date_of_birth = '1990-03-15',
+    gender = 'Male',
+    national_id = '900751890V',
+    employment_type = 'Full-time',
+    employment_status = 'Active',
+    housing_allowance = 20000,
+    transport_allowance = 8000,
+    medical_allowance = 12000,
+    payment_method = 'Bank Transfer',
+    bank_name = 'Sampath Bank',
+    bank_branch = 'Nugegoda',
+    bank_account_number = '9876543210',
+    tax_id = 'TIN-2022-00312',
+    epf_number = 'EPF-SAL-0025',
+    emergency_contact_name = 'Dilani Perera',
+    emergency_contact_phone = '071-888-7777'
+WHERE email = 'nuwan.perera@company.com' AND date_of_birth IS NULL;
+
+UPDATE employees SET
+    date_of_birth = '1988-11-08',
+    gender = 'Female',
+    national_id = '885121456V',
+    employment_type = 'Full-time',
+    employment_status = 'Active',
+    housing_allowance = 30000,
+    transport_allowance = 12000,
+    medical_allowance = 18000,
+    payment_method = 'Bank Transfer',
+    bank_name = 'HNB',
+    bank_branch = 'Bambalapitiya',
+    bank_account_number = '5555666677',
+    tax_id = 'TIN-2021-00198',
+    epf_number = 'EPF-HR-0003',
+    emergency_contact_name = 'Rohan Fernando',
+    emergency_contact_phone = '070-777-6666'
+WHERE email = 'ishara.fernando@company.com' AND date_of_birth IS NULL;

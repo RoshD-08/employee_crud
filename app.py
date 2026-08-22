@@ -1,6 +1,7 @@
 """
 app.py
-Flask CRUD application for managing employee records in PostgreSQL.
+Flask Payroll System — CRUD application for managing employee records
+and payroll information in PostgreSQL.
 
 Routes:
     GET  /                     -> list employees (with optional search)
@@ -9,6 +10,9 @@ Routes:
     GET  /employees/<id>/edit  -> show "edit employee" form
     POST /employees/<id>/edit  -> update employee
     POST /employees/<id>/delete-> delete employee
+    GET  /employees/<id>       -> view employee profile
+    GET  /map                  -> employee locations map
+    GET  /api/reverse-geocode  -> reverse geocode API
 """
 
 import psycopg2
@@ -31,6 +35,40 @@ DEPARTMENTS = [
     "Customer Support",
 ]
 
+EMPLOYMENT_TYPES = [
+    "Full-time",
+    "Part-time",
+    "Contract",
+    "Intern",
+]
+
+EMPLOYMENT_STATUSES = [
+    "Active",
+    "On Leave",
+    "Suspended",
+    "Terminated",
+    "Resigned",
+]
+
+PAYMENT_METHODS = [
+    "Bank Transfer",
+    "Cash",
+    "Cheque",
+]
+
+TAX_FILING_STATUSES = [
+    "Single",
+    "Married",
+    "Other",
+]
+
+GENDERS = [
+    "Male",
+    "Female",
+    "Other",
+    "Prefer not to say",
+]
+
 
 def get_db_connection():
     """Open a new PostgreSQL connection using settings from Config."""
@@ -47,22 +85,67 @@ def fetch_employee_or_none(employee_id):
         conn.close()
 
 
+def _form_constants():
+    """Return the dict of dropdown constants passed to every form template."""
+    return {
+        "departments": DEPARTMENTS,
+        "employment_types": EMPLOYMENT_TYPES,
+        "employment_statuses": EMPLOYMENT_STATUSES,
+        "payment_methods": PAYMENT_METHODS,
+        "tax_filing_statuses": TAX_FILING_STATUSES,
+        "genders": GENDERS,
+    }
+
+
 def validate_employee_form(form):
     """Return (data_dict, list_of_errors) from a submitted form."""
     errors = []
 
+    # ── Personal details ──
     first_name = form.get("first_name", "").strip()
     last_name = form.get("last_name", "").strip()
     email = form.get("email", "").strip()
     phone = form.get("phone", "").strip()
+    date_of_birth = form.get("date_of_birth", "").strip()
+    gender = form.get("gender", "").strip()
+    national_id = form.get("national_id", "").strip()
+
+    # ── Emergency contact ──
+    emergency_contact_name = form.get("emergency_contact_name", "").strip()
+    emergency_contact_phone = form.get("emergency_contact_phone", "").strip()
+
+    # ── Employment details ──
     department = form.get("department", "").strip()
     position = form.get("position", "").strip()
-    salary = form.get("salary", "").strip()
+    employment_type = form.get("employment_type", "").strip()
     hire_date = form.get("hire_date", "").strip()
+    employment_status = form.get("employment_status", "").strip()
+
+    # ── Compensation ──
+    salary = form.get("salary", "").strip()
+    housing_allowance_raw = form.get("housing_allowance", "").strip()
+    transport_allowance_raw = form.get("transport_allowance", "").strip()
+    medical_allowance_raw = form.get("medical_allowance", "").strip()
+    other_allowance_raw = form.get("other_allowance", "").strip()
+
+    # ── Bank / payment ──
+    payment_method = form.get("payment_method", "").strip()
+    bank_name = form.get("bank_name", "").strip()
+    bank_branch = form.get("bank_branch", "").strip()
+    bank_account_number = form.get("bank_account_number", "").strip()
+
+    # ── Tax & statutory ──
+    tax_id = form.get("tax_id", "").strip()
+    epf_number = form.get("epf_number", "").strip()
+    esi_number = form.get("esi_number", "").strip()
+    tax_filing_status = form.get("tax_filing_status", "").strip()
+
+    # ── Address / location ──
     address = form.get("address", "").strip()
     latitude_raw = form.get("latitude", "").strip()
     longitude_raw = form.get("longitude", "").strip()
 
+    # ── Required field validation ──
     if not first_name:
         errors.append("First name is required.")
     if not last_name:
@@ -75,22 +158,50 @@ def validate_employee_form(form):
         errors.append("Position is required.")
     if not hire_date:
         errors.append("Hire date is required.")
-    if not address:
-        errors.append("Address is required.")
+    if not employment_type:
+        errors.append("Employment type is required.")
+    if not employment_status:
+        errors.append("Employment status is required.")
 
+    # ── Salary validation ──
     salary_value = None
     if salary:
         try:
             salary_value = float(salary)
             if salary_value < 0:
-                errors.append("Salary cannot be negative.")
+                errors.append("Basic salary cannot be negative.")
         except ValueError:
-            errors.append("Salary must be a number.")
+            errors.append("Basic salary must be a number.")
     else:
-        errors.append("Salary is required.")
+        errors.append("Basic salary is required.")
 
-    # Coordinates dropped by clicking the map picker (see _location_picker.html).
-    # Both are only present together — the hidden inputs are always written as a pair.
+    # ── Allowance validation (optional, default 0) ──
+    def _parse_allowance(raw, label):
+        if not raw:
+            return 0.0
+        try:
+            val = float(raw)
+            if val < 0:
+                errors.append(f"{label} cannot be negative.")
+                return 0.0
+            return val
+        except ValueError:
+            errors.append(f"{label} must be a number.")
+            return 0.0
+
+    housing_allowance = _parse_allowance(housing_allowance_raw, "Housing allowance")
+    transport_allowance = _parse_allowance(transport_allowance_raw, "Transport allowance")
+    medical_allowance = _parse_allowance(medical_allowance_raw, "Medical allowance")
+    other_allowance = _parse_allowance(other_allowance_raw, "Other allowance")
+
+    # ── Bank details validation ──
+    if payment_method == "Bank Transfer":
+        if not bank_name:
+            errors.append("Bank name is required for bank transfer payments.")
+        if not bank_account_number:
+            errors.append("Account number is required for bank transfer payments.")
+
+    # ── Coordinates from map picker ──
     picked_latitude = None
     picked_longitude = None
     if latitude_raw and longitude_raw:
@@ -101,14 +212,40 @@ def validate_employee_form(form):
             errors.append("That map pin looks invalid — click the map again to reset it.")
 
     data = {
+        # Personal
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
         "phone": phone,
+        "date_of_birth": date_of_birth or None,
+        "gender": gender or None,
+        "national_id": national_id or None,
+        # Emergency contact
+        "emergency_contact_name": emergency_contact_name or None,
+        "emergency_contact_phone": emergency_contact_phone or None,
+        # Employment
         "department": department,
         "position": position,
-        "salary": salary_value,
+        "employment_type": employment_type,
         "hire_date": hire_date,
+        "employment_status": employment_status,
+        # Compensation
+        "salary": salary_value,
+        "housing_allowance": housing_allowance,
+        "transport_allowance": transport_allowance,
+        "medical_allowance": medical_allowance,
+        "other_allowance": other_allowance,
+        # Bank
+        "payment_method": payment_method or "Bank Transfer",
+        "bank_name": bank_name or None,
+        "bank_branch": bank_branch or None,
+        "bank_account_number": bank_account_number or None,
+        # Tax
+        "tax_id": tax_id or None,
+        "epf_number": epf_number or None,
+        "esi_number": esi_number or None,
+        "tax_filing_status": tax_filing_status or None,
+        # Location
         "address": address,
         "latitude": picked_latitude,
         "longitude": picked_longitude,
@@ -116,10 +253,34 @@ def validate_employee_form(form):
     return data, errors
 
 
+# ── All columns (excluding id, created_at, updated_at) for INSERT ──
+_INSERT_COLS = [
+    "first_name", "last_name", "email", "phone",
+    "date_of_birth", "gender", "national_id",
+    "emergency_contact_name", "emergency_contact_phone",
+    "department", "position", "employment_type", "hire_date", "employment_status",
+    "salary", "housing_allowance", "transport_allowance", "medical_allowance", "other_allowance",
+    "payment_method", "bank_name", "bank_branch", "bank_account_number",
+    "tax_id", "epf_number", "esi_number", "tax_filing_status",
+    "address", "latitude", "longitude",
+]
+
+_INSERT_SQL = f"""
+    INSERT INTO employees ({', '.join(_INSERT_COLS)})
+    VALUES ({', '.join(['%s'] * len(_INSERT_COLS))});
+"""
+
+_UPDATE_SETS = ', '.join(f"{col} = %s" for col in _INSERT_COLS)
+_UPDATE_SQL = f"""
+    UPDATE employees SET {_UPDATE_SETS} WHERE id = %s;
+"""
+
+
 @app.route("/")
 def list_employees():
     search = request.args.get("q", "").strip()
     department = request.args.get("department", "").strip()
+    status = request.args.get("status", "").strip()
 
     conn = get_db_connection()
     try:
@@ -141,6 +302,10 @@ def list_employees():
                 query += " AND department = %s"
                 params.append(department)
 
+            if status:
+                query += " AND employment_status = %s"
+                params.append(status)
+
             query += " ORDER BY id DESC;"
             cur.execute(query, params)
             employees = cur.fetchall()
@@ -152,7 +317,9 @@ def list_employees():
         employees=employees,
         search=search,
         selected_department=department,
+        selected_status=status,
         departments=DEPARTMENTS,
+        employment_statuses=EMPLOYMENT_STATUSES,
     )
 
 
@@ -163,31 +330,23 @@ def add_employee():
 
         if not errors:
             if data["latitude"] is not None and data["longitude"] is not None:
-                # User dropped a pin on the map picker — trust it over the text address.
                 latitude, longitude = data["latitude"], data["longitude"]
             else:
                 latitude, longitude = geocode_address(data["address"])
+
+            data["latitude"] = latitude
+            data["longitude"] = longitude
 
             conn = get_db_connection()
             try:
                 with conn.cursor() as cur:
                     cur.execute(
-                        """
-                        INSERT INTO employees
-                            (first_name, last_name, email, phone, department,
-                             position, salary, hire_date, address, latitude, longitude)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-                        """,
-                        (
-                            data["first_name"], data["last_name"], data["email"],
-                            data["phone"], data["department"], data["position"],
-                            data["salary"], data["hire_date"], data["address"],
-                            latitude, longitude,
-                        ),
+                        _INSERT_SQL,
+                        tuple(data[col] for col in _INSERT_COLS),
                     )
                 conn.commit()
                 flash(f"{data['first_name']} {data['last_name']} was added.", "success")
-                if latitude is None:
+                if latitude is None and data["address"]:
                     flash("Couldn't find that address on the map — you can edit it later to try again.", "error")
                 return redirect(url_for("list_employees"))
             except psycopg2.errors.UniqueViolation:
@@ -198,9 +357,9 @@ def add_employee():
 
         for error in errors:
             flash(error, "error")
-        return render_template("add_employee.html", employee=data, departments=DEPARTMENTS), 400
+        return render_template("add_employee.html", employee=data, **_form_constants()), 400
 
-    return render_template("add_employee.html", employee={}, departments=DEPARTMENTS)
+    return render_template("add_employee.html", employee={}, **_form_constants())
 
 
 @app.route("/employees/<int:employee_id>/edit", methods=["GET", "POST"])
@@ -215,34 +374,25 @@ def edit_employee(employee_id):
 
         if not errors:
             if data["latitude"] is not None and data["longitude"] is not None:
-                # User dropped a pin on the map picker — trust it over the text address.
                 latitude, longitude = data["latitude"], data["longitude"]
             elif data["address"] != (existing["address"] or ""):
                 latitude, longitude = geocode_address(data["address"])
             else:
                 latitude, longitude = existing["latitude"], existing["longitude"]
 
+            data["latitude"] = latitude
+            data["longitude"] = longitude
+
             conn = get_db_connection()
             try:
                 with conn.cursor() as cur:
                     cur.execute(
-                        """
-                        UPDATE employees
-                        SET first_name = %s, last_name = %s, email = %s, phone = %s,
-                            department = %s, position = %s, salary = %s, hire_date = %s,
-                            address = %s, latitude = %s, longitude = %s
-                        WHERE id = %s;
-                        """,
-                        (
-                            data["first_name"], data["last_name"], data["email"],
-                            data["phone"], data["department"], data["position"],
-                            data["salary"], data["hire_date"], data["address"],
-                            latitude, longitude, employee_id,
-                        ),
+                        _UPDATE_SQL,
+                        tuple(data[col] for col in _INSERT_COLS) + (employee_id,),
                     )
                 conn.commit()
                 flash(f"{data['first_name']} {data['last_name']} was updated.", "success")
-                if latitude is None:
+                if latitude is None and data["address"]:
                     flash("Couldn't find that address on the map — you can refine it and save again.", "error")
                 return redirect(url_for("list_employees"))
             except psycopg2.errors.UniqueViolation:
@@ -254,9 +404,9 @@ def edit_employee(employee_id):
         for error in errors:
             flash(error, "error")
         data["id"] = employee_id
-        return render_template("edit_employee.html", employee=data, departments=DEPARTMENTS), 400
+        return render_template("edit_employee.html", employee=data, **_form_constants()), 400
 
-    return render_template("edit_employee.html", employee=existing, departments=DEPARTMENTS)
+    return render_template("edit_employee.html", employee=existing, **_form_constants())
 
 
 @app.route("/employees/<int:employee_id>/delete", methods=["POST"])
