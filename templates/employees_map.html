@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+  <div id="roster-map" class="h-[32rem] w-full"></div>
+{% endblock %}
+
+{% block scripts %}
+{% if markers %}
+  <script type="application/json" id="roster-markers-data">{{ markers|tojson }}</script>
+  <script>
+    const markers = JSON.parse(document.getElementById('roster-markers-data').textContent);
+    const map = L.map('roster-map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    const bounds = [];
+    markers.forEach((m) => {
+      L.marker([m.lat, m.lng]).addTo(map)
+        .bindPopup(`<strong>${m.name}</strong><br>${m.position} &middot; ${m.department}`);
+      bounds.push([m.lat, m.lng]);
+    });
+    map.fitBounds(bounds, { padding: [30, 30] });
+  </script>
+{% endif %}
+{% endblock %}

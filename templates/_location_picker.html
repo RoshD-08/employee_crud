@@ -1,0 +1,89 @@
+{% set picker_lat = employee.get('latitude') %}
+{% set picker_lng = employee.get('longitude') %}
+{# Shared residential-address field: click the map to drop a pin, the address fills in
+   automatically via reverse geocoding. Falls back to geocoding the typed address on save
+   if no pin was placed. Included by add_employee.html and edit_employee.html. #}
+<div>
+  <div class="flex items-center justify-between mb-1.5">
+    <label for="address" class="block text-sm font-semibold text-ink">Residential address</label>
+    <span id="location-status" class="text-xs font-medium {{ 'text-accent-dark' if picker_lat is not none and picker_lng is not none else 'text-ink/50' }}">
+      {% if picker_lat is not none and picker_lng is not none %}
+        &#10003; Located on map
+      {% else %}
+        Click the map to set the location
+      {% endif %}
+    </span>
+  </div>
+
+  <textarea id="address" name="address" rows="2" required
+            placeholder="e.g. No. 65, Ward Place, Colombo 07, Sri Lanka"
+            class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">{{ employee.get('address') or '' }}</textarea>
+
+  <input type="hidden" id="latitude" name="latitude" value="{{ picker_lat if picker_lat is not none else '' }}" />
+  <input type="hidden" id="longitude" name="longitude" value="{{ picker_lng if picker_lng is not none else '' }}" />
+
+  <p class="text-xs text-ink/50 mt-1.5 mb-2">
+    Click anywhere on the map to pin the employee's residence — the address field fills in for you.
+    You can still edit the text by hand, and we'll try to place a pin from it automatically if you skip the map.
+  </p>
+
+  <div id="location-picker-map" class="h-64 w-full rounded-md border border-line"></div>
+</div>
+
+<script type="application/json" id="location-picker-initial">{{ {"lat": picker_lat, "lng": picker_lng}|tojson }}</script>
+<script>
+  (function () {
+    const initial = JSON.parse(document.getElementById('location-picker-initial').textContent);
+    const defaultCenter = [7.8731, 80.7718]; // Sri Lanka, roughly centered — just a starting view
+    const hasInitialPin = initial.lat !== null && initial.lng !== null;
+
+    const map = L.map('location-picker-map').setView(
+      hasInitialPin ? [initial.lat, initial.lng] : defaultCenter,
+      hasInitialPin ? 15 : 7
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+    const addressField = document.getElementById('address');
+    const statusEl = document.getElementById('location-status');
+    let marker = hasInitialPin ? L.marker([initial.lat, initial.lng]).addTo(map) : null;
+
+    function setStatus(text, ok) {
+      statusEl.textContent = text;
+      statusEl.className = 'text-xs font-medium ' + (ok ? 'text-accent-dark' : 'text-rust');
+    }
+
+    function placePin(lat, lng) {
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng]).addTo(map);
+      }
+      latInput.value = lat;
+      lngInput.value = lng;
+    }
+
+    map.on('click', function (e) {
+      const { lat, lng } = e.latlng;
+      placePin(lat, lng);
+      setStatus('Finding address for that pin…', true);
+
+      fetch(`/api/reverse-geocode?lat=${lat}&lon=${lng}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.address) {
+            addressField.value = data.address;
+            setStatus('✓ Located on map', true);
+          } else {
+            setStatus('Pin placed — type the address manually.', false);
+          }
+        })
+        .catch(() => {
+          setStatus('Pin placed, but the address lookup failed — type it manually.', false);
+        });
+    });
+  })();
+</script>
