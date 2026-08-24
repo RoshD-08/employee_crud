@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-4 sm:p-6 bg-[#F7F8FA] min-h-screen font-body">
+    <div class="mb-4">
+        <a href="{{ url_for('view_employee', employee_id=employee.id) }}" class="text-[#2F6F63] hover:text-[#204E45] text-sm font-medium flex items-center">
+            &larr; Back to Employee Profile
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-[#E2E5EA] overflow-hidden">
+        <div class="p-6 border-b border-[#E2E5EA] flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h2 class="text-2xl font-display font-semibold text-[#14181F]">{{ employee.name }}'s Attendance</h2>
+                <p class="text-sm text-gray-500">{{ month_name }} {{ year }}</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('employee_attendance', employee_id=employee.id, year=prev_year, month=prev_month) }}" class="px-3 py-1.5 rounded-md border border-[#E2E5EA] text-sm font-medium hover:bg-[#F7F8FA]">&larr; Prev</a>
+                <span class="font-medium text-[#14181F]">{{ month_name }} {{ year }}</span>
+                <a href="{{ url_for('employee_attendance', employee_id=employee.id, year=next_year, month=next_month) }}" class="px-3 py-1.5 rounded-md border border-[#E2E5EA] text-sm font-medium hover:bg-[#F7F8FA]">Next &rarr;</a>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('save_attendance', employee_id=employee.id, year=year, month=month) }}">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-max text-xs">
+                    <thead>
+                        <tr class="bg-[#F7F8FA] border-b border-[#E2E5EA] text-[#14181F] font-semibold">
+                            <th class="px-3 py-2">Date</th>
+                            <th class="px-3 py-2">Day</th>
+                            <th class="px-3 py-2">Arrival</th>
+                            <th class="px-3 py-2">Departure</th>
+                            <th class="px-3 py-2">Status</th>
+                            <th class="px-3 py-2">Leave Type</th>
+                            <th class="px-3 py-2 text-center">Late</th>
+                            <th class="px-3 py-2 text-center">Early</th>
+                            <th class="px-3 py-2">OT Hrs</th>
+                            <th class="px-3 py-2">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#E2E5EA]">
+                        {% for day in days %}
+                        <tr class="{% if day.is_sunday %}bg-amber-50{% else %}bg-white{% endif %} hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">{{ day.date.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap font-medium {% if day.is_sunday %}text-amber-700{% endif %}">{{ day.day_name }}</td>
+                            <td class="px-3 py-2">
+                                <input type="time" name="day_{{ day.date.day }}_arrival" value="{{ day.arrival_time or '' }}" 
+                                       class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})">
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="time" name="day_{{ day.date.day }}_departure" value="{{ day.departure_time or '' }}" 
+                                       class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})">
+                            </td>
+                            <td class="px-3 py-2">
+                                <select name="day_{{ day.date.day }}_status" 
+                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
+                                        onchange="toggleLeaveType({{ day.date.day }}, this.value)">
+                                    {% for status in attendance_statuses %}
+                                    <option value="{{ status }}" {% if day.status == status %}selected{% endif %}>{{ status }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-3 py-2">
+                                <select name="day_{{ day.date.day }}_leave_type" id="leave_type_{{ day.date.day }}"
+                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
+                                        {% if day.status != 'Leave' %}disabled style="display: none;"{% endif %}>
+                                    <option value="">-- Select --</option>
+                                    {% for leave in leave_types %}
+                                    <option value="{{ leave }}" {% if day.leave_type == leave %}selected{% endif %}>{{ leave }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                                <input type="checkbox" name="day_{{ day.date.day }}_late" {% if day.late_arrival %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]">
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                                <input type="checkbox" name="day_{{ day.date.day }}_early" {% if day.early_departure %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]">
+                            </td>
+                            <td class="px-3 py-2 font-mono text-gray-700">
+                                <span id="ot_display_{{ day.date.day }}">{{ day.ot_hours_sunday if day.is_sunday else day.ot_hours or '0.0' }}</span>
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="text" name="day_{{ day.date.day }}_notes" value="{{ day.notes or '' }}" class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="p-6 bg-[#F7F8FA] border-t border-[#E2E5EA] flex justify-between items-center">
+                <div class="text-sm font-medium text-gray-600">
+                    Review and save attendance records.
+                </div>
+                <button type="submit" class="bg-[#2F6F63] hover:bg-[#204E45] text-white px-6 py-2 rounded-md font-medium text-sm transition-colors shadow-sm">
+                    Save Attendance
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function calcOT(dayNum, isSunday) {
+    const arrInput = document.querySelector(`[name="day_${dayNum}_arrival"]`);
+    const depInput = document.querySelector(`[name="day_${dayNum}_departure"]`);
+    
+    if (!arrInput || !depInput) return;
+    
+    const arr = arrInput.value;
+    const dep = depInput.value;
+    
+    if (arr && dep) {
+        const [ah, am] = arr.split(':').map(Number);
+        const [dh, dm] = dep.split(':').map(Number);
+        let worked = (dh + dm/60) - (ah + am/60);
+        let ot = Math.max(0, worked - 8);
+        document.getElementById(`ot_display_${dayNum}`).textContent = ot.toFixed(1);
+    } else {
+        document.getElementById(`ot_display_${dayNum}`).textContent = '0.0';
+    }
+}
+
+function toggleLeaveType(dayNum, statusValue) {
+    const leaveSelect = document.getElementById(`leave_type_${dayNum}`);
+    if (statusValue === 'Leave') {
+        leaveSelect.disabled = false;
+        leaveSelect.style.display = 'block';
+    } else {
+        leaveSelect.disabled = true;
+        leaveSelect.style.display = 'none';
+        leaveSelect.value = '';
+    }
+}
+</script>
+{% endblock %}

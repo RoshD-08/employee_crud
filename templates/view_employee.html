@@ -84,6 +84,16 @@
         <h2 class="text-lg font-display font-semibold text-ink mb-4">Employment Details</h2>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1">Employee Category</p>
+            {% if employee.employee_category == 'Employee' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">Employee</span>
+            {% elif employee.employee_category == 'Labourer' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">Labourer</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">{{ employee.employee_category or '—' }}</span>
+            {% endif %}
+          </div>
+          <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1">Department</p>
             <p class="text-sm text-ink">{{ employee.department or '—' }}</p>
           </div>
@@ -113,6 +123,25 @@
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ light_class }}">
               {{ employee.employment_status or 'Unknown' }}
             </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2.5: Leave Allocation -->
+      <div class="pt-6 border-t border-line">
+        <h2 class="text-lg font-display font-semibold text-ink mb-4">Leave Allocation</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1">Annual Leave</p>
+            <p class="text-sm text-ink">{{ employee.annual_leave_allowed or 0 }} days / year</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1">Casual Leave</p>
+            <p class="text-sm text-ink">{{ employee.casual_leave_allowed or 0 }} days / year</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1">Medical Leave</p>
+            <p class="text-sm text-ink">{{ employee.medical_leave_allowed or 0 }} days / year</p>
           </div>
         </div>
       </div>
@@ -235,6 +264,21 @@
         {% if employee.latitude is not none and employee.longitude is not none %}
           <div id="employee-map" class="h-72 w-full rounded-md border border-line mt-4 z-0"></div>
         {% endif %}
+      </div>
+
+      <!-- Section 8: Quick Actions -->
+      <div class="pt-6 border-t border-line">
+        <h2 class="text-lg font-display font-semibold text-ink mb-4">Quick Actions</h2>
+        <div class="flex gap-4">
+          <a href="{{ url_for('employee_attendance', employee_id=employee.id, year=current_year, month=current_month) }}"
+             class="inline-flex items-center justify-center rounded-md border-2 border-accent text-accent hover:bg-accent hover:text-white transition-colors text-sm font-semibold px-5 py-2">
+            View Attendance
+          </a>
+          <a href="{{ url_for('view_payslip', year=current_year, month=current_month, employee_id=employee.id) }}"
+             class="inline-flex items-center justify-center rounded-md border-2 border-accent text-accent hover:bg-accent hover:text-white transition-colors text-sm font-semibold px-5 py-2">
+            View Payslip
+          </a>
+        </div>
       </div>
 
     </div>

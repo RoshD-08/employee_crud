@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-[#14181F]">Company Settings</h1>
+        <a href="{{ url_for('list_employees') }}" class="text-sm font-medium text-[#2F6F63] hover:text-[#2F6F63] transition-colors">&larr; Back to Employees</a>
+    </div>
+
+    <div class="bg-white rounded-lg border border-[#E2E5EA] shadow-sm overflow-hidden">
+        <form action="{{ url_for('company_settings') }}" method="POST" class="p-6">
+            <h2 class="text-lg font-bold text-[#14181F] mb-4 border-b border-[#E2E5EA] pb-2">Bonus & Incentives</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="annual_bonus" class="block text-sm font-semibold text-ink mb-1.5">Annual Bonus</label>
+                    <input type="number" id="annual_bonus" name="annual_bonus" step="0.01" min="0" value="{{ annual_bonus }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+                    <p class="mt-1.5 text-xs text-[#14181F]/70">Applied to all employees in December payroll</p>
+                </div>
+
+                <div>
+                    <label for="monthly_incentive" class="block text-sm font-semibold text-ink mb-1.5">Monthly Incentive</label>
+                    <input type="number" id="monthly_incentive" name="monthly_incentive" step="0.01" min="0" value="{{ monthly_incentive }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+                    <p class="mt-1.5 text-xs text-[#14181F]/70">Applied to all employees every month</p>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-[#E2E5EA] flex justify-end">
+                <button type="submit" class="bg-accent hover:bg-accent-dark text-white font-semibold px-6 py-2 rounded-md transition-colors">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

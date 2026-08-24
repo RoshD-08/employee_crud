@@ -79,60 +79,124 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS epf_number          VARCHAR(50);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS esi_number          VARCHAR(50);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS tax_filing_status   VARCHAR(30);
 
+-- ── Payroll: employee category & leave quotas ──
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_category      VARCHAR(20) DEFAULT 'Employee';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS annual_leave_allowed   INTEGER DEFAULT 14;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS casual_leave_allowed   INTEGER DEFAULT 7;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS medical_leave_allowed  INTEGER DEFAULT 7;
+
 -- ── Backfill sample rows with payroll data ──
 UPDATE employees SET
-    date_of_birth = '1995-07-22',
-    gender = 'Female',
-    national_id = '957221234V',
-    employment_type = 'Full-time',
-    employment_status = 'Active',
-    housing_allowance = 25000,
-    transport_allowance = 10000,
-    medical_allowance = 15000,
-    payment_method = 'Bank Transfer',
-    bank_name = 'Commercial Bank',
-    bank_branch = 'Colombo Fort',
-    bank_account_number = '1234567890',
-    tax_id = 'TIN-2023-00451',
-    epf_number = 'EPF-ENG-0011',
-    emergency_contact_name = 'Kamal Silva',
-    emergency_contact_phone = '077-999-8888'
-WHERE email = 'amara.silva@company.com' AND date_of_birth IS NULL;
+    date_of_birth = '1995-07-22', gender = 'Female', national_id = '957221234V',
+    employment_type = 'Full-time', employment_status = 'Active',
+    housing_allowance = 25000, transport_allowance = 10000, medical_allowance = 15000,
+    payment_method = 'Bank Transfer', bank_name = 'Commercial Bank',
+    bank_branch = 'Colombo Fort', bank_account_number = '1234567890',
+    tax_id = 'TIN-2023-00451', epf_number = 'EPF-ENG-0011',
+    emergency_contact_name = 'Kamal Silva', emergency_contact_phone = '077-999-8888',
+    employee_category = 'Employee', annual_leave_allowed = 14,
+    casual_leave_allowed = 7, medical_leave_allowed = 7
+WHERE email = 'amara.silva@company.com' AND employee_category IS NULL;
 
 UPDATE employees SET
-    date_of_birth = '1990-03-15',
-    gender = 'Male',
-    national_id = '900751890V',
-    employment_type = 'Full-time',
-    employment_status = 'Active',
-    housing_allowance = 20000,
-    transport_allowance = 8000,
-    medical_allowance = 12000,
-    payment_method = 'Bank Transfer',
-    bank_name = 'Sampath Bank',
-    bank_branch = 'Nugegoda',
-    bank_account_number = '9876543210',
-    tax_id = 'TIN-2022-00312',
-    epf_number = 'EPF-SAL-0025',
-    emergency_contact_name = 'Dilani Perera',
-    emergency_contact_phone = '071-888-7777'
-WHERE email = 'nuwan.perera@company.com' AND date_of_birth IS NULL;
+    date_of_birth = '1990-03-15', gender = 'Male', national_id = '900751890V',
+    employment_type = 'Full-time', employment_status = 'Active',
+    housing_allowance = 20000, transport_allowance = 8000, medical_allowance = 12000,
+    payment_method = 'Bank Transfer', bank_name = 'Sampath Bank',
+    bank_branch = 'Nugegoda', bank_account_number = '9876543210',
+    tax_id = 'TIN-2022-00312', epf_number = 'EPF-SAL-0025',
+    emergency_contact_name = 'Dilani Perera', emergency_contact_phone = '071-888-7777',
+    employee_category = 'Labourer', annual_leave_allowed = 14,
+    casual_leave_allowed = 7, medical_leave_allowed = 7
+WHERE email = 'nuwan.perera@company.com' AND employee_category IS NULL;
 
 UPDATE employees SET
-    date_of_birth = '1988-11-08',
-    gender = 'Female',
-    national_id = '885121456V',
-    employment_type = 'Full-time',
-    employment_status = 'Active',
-    housing_allowance = 30000,
-    transport_allowance = 12000,
-    medical_allowance = 18000,
-    payment_method = 'Bank Transfer',
-    bank_name = 'HNB',
-    bank_branch = 'Bambalapitiya',
-    bank_account_number = '5555666677',
-    tax_id = 'TIN-2021-00198',
-    epf_number = 'EPF-HR-0003',
-    emergency_contact_name = 'Rohan Fernando',
-    emergency_contact_phone = '070-777-6666'
-WHERE email = 'ishara.fernando@company.com' AND date_of_birth IS NULL;
+    date_of_birth = '1988-11-08', gender = 'Female', national_id = '885121456V',
+    employment_type = 'Full-time', employment_status = 'Active',
+    housing_allowance = 30000, transport_allowance = 12000, medical_allowance = 18000,
+    payment_method = 'Bank Transfer', bank_name = 'HNB',
+    bank_branch = 'Bambalapitiya', bank_account_number = '5555666677',
+    tax_id = 'TIN-2021-00198', epf_number = 'EPF-HR-0003',
+    emergency_contact_name = 'Rohan Fernando', emergency_contact_phone = '070-777-6666',
+    employee_category = 'Employee', annual_leave_allowed = 14,
+    casual_leave_allowed = 7, medical_leave_allowed = 7
+WHERE email = 'ishara.fernando@company.com' AND employee_category IS NULL;
+
+
+-- ============================================================
+-- NEW TABLES: Attendance, Payroll, Company Settings
+-- ============================================================
+
+-- ── Attendance: one row per employee per day ──
+CREATE TABLE IF NOT EXISTS attendance (
+    id               SERIAL PRIMARY KEY,
+    employee_id      INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    work_date        DATE NOT NULL,
+    arrival_time     TIME,
+    departure_time   TIME,
+    is_sunday        BOOLEAN DEFAULT FALSE,
+    status           VARCHAR(20) NOT NULL DEFAULT 'Present',
+    leave_type       VARCHAR(20),
+    late_arrival     BOOLEAN DEFAULT FALSE,
+    early_departure  BOOLEAN DEFAULT FALSE,
+    ot_hours         NUMERIC(5, 2) DEFAULT 0,
+    ot_hours_sunday  NUMERIC(5, 2) DEFAULT 0,
+    notes            TEXT,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(employee_id, work_date)
+);
+
+-- ── Payroll: one row per employee per month ──
+CREATE TABLE IF NOT EXISTS payroll (
+    id                     SERIAL PRIMARY KEY,
+    employee_id            INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    year                   INTEGER NOT NULL,
+    month                  INTEGER NOT NULL,
+    -- Earnings
+    basic_salary           NUMERIC(10, 2) NOT NULL,
+    total_allowances       NUMERIC(10, 2) DEFAULT 0,
+    ot_hours_weekday       NUMERIC(5, 2) DEFAULT 0,
+    ot_hours_sunday        NUMERIC(5, 2) DEFAULT 0,
+    ot_hours_sunday_triple NUMERIC(5, 2) DEFAULT 0,
+    ot_payment             NUMERIC(10, 2) DEFAULT 0,
+    bonus                  NUMERIC(10, 2) DEFAULT 0,
+    incentive              NUMERIC(10, 2) DEFAULT 0,
+    gross_salary           NUMERIC(12, 2) DEFAULT 0,
+    -- Deductions
+    epf_employee           NUMERIC(10, 2) DEFAULT 0,
+    no_pay_deduction       NUMERIC(10, 2) DEFAULT 0,
+    salary_advance         NUMERIC(10, 2) DEFAULT 0,
+    loan_deduction         NUMERIC(10, 2) DEFAULT 0,
+    other_deductions       NUMERIC(10, 2) DEFAULT 0,
+    total_deductions       NUMERIC(12, 2) DEFAULT 0,
+    -- Company contributions
+    epf_employer           NUMERIC(10, 2) DEFAULT 0,
+    etf_employer           NUMERIC(10, 2) DEFAULT 0,
+    -- Result
+    net_salary             NUMERIC(12, 2) DEFAULT 0,
+    -- Attendance summary
+    working_days           INTEGER DEFAULT 0,
+    late_arrivals          INTEGER DEFAULT 0,
+    early_departures       INTEGER DEFAULT 0,
+    absences               INTEGER DEFAULT 0,
+    no_pay_days            INTEGER DEFAULT 0,
+    annual_leave_taken     INTEGER DEFAULT 0,
+    casual_leave_taken     INTEGER DEFAULT 0,
+    medical_leave_taken    INTEGER DEFAULT 0,
+    -- Meta
+    status                 VARCHAR(20) DEFAULT 'Draft',
+    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(employee_id, year, month)
+);
+
+-- ── Company settings: bonus & incentive amounts ──
+CREATE TABLE IF NOT EXISTS company_settings (
+    id            SERIAL PRIMARY KEY,
+    setting_key   VARCHAR(50) UNIQUE NOT NULL,
+    setting_value TEXT NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO company_settings (setting_key, setting_value)
+VALUES ('annual_bonus', '0'), ('monthly_incentive', '0')
+ON CONFLICT (setting_key) DO NOTHING;

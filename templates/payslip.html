@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
+    body {
+        background-color: white !important;
+    }
+    .print-border {
+        border-color: #000 !important;
+    }
+}
+</style>
+
+<div class="max-w-5xl mx-auto p-4 sm:p-8 bg-[#F7F8FA] min-h-screen font-body print:p-0 print:bg-white">
+    
+    <!-- Controls (Hidden on Print) -->
+    <div class="mb-6 flex justify-between items-center no-print">
+        <a href="{{ url_for('payroll_dashboard') }}" class="text-[#2F6F63] hover:text-[#204E45] text-sm font-medium flex items-center">
+            &larr; Back to Dashboard
+        </a>
+        <button onclick="window.print()" class="bg-white border border-[#E2E5EA] px-4 py-2 rounded-md text-sm font-medium text-[#14181F] hover:bg-gray-50 flex items-center shadow-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print Payslip
+        </button>
+    </div>
+
+    <!-- Payslip Container -->
+    <div class="bg-white rounded-lg shadow-sm border border-[#E2E5EA] overflow-hidden print:shadow-none print:border-none">
+        
+        <!-- Header -->
+        <div class="p-6 border-b border-[#E2E5EA] text-center print:border-b-2 print-border">
+            <h1 class="text-3xl font-display font-bold text-[#14181F] uppercase tracking-wide">Payslip</h1>
+            <h2 class="text-xl text-gray-600 mt-1">{{ month_name }} {{ year }}</h2>
+        </div>
+
+        <!-- Employee Info -->
+        <div class="bg-[#F7F8FA] p-6 border-b border-[#E2E5EA] print:bg-white print:border-b-2 print-border">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Employee Name</p>
+                    <p class="font-medium text-[#14181F] text-lg">{{ employee.name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Employee ID</p>
+                    <p class="font-mono text-[#14181F]">{{ employee.id }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Department</p>
+                    <p class="font-medium text-[#14181F]">{{ employee.department }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Position</p>
+                    <p class="font-medium text-[#14181F]">{{ employee.position }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Financials -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-[#E2E5EA] print:grid-cols-2 print:divide-x print:divide-y-0 print-border">
+            
+            <!-- Earnings -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-[#14181F] mb-4 border-b border-gray-100 pb-2">Earnings</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Basic Salary</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.basic_salary or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Total Allowances</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.total_allowances or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">OT Payment <span class="text-xs text-gray-400">({{ payslip.ot_hours_weekday }}h W, {{ payslip.ot_hours_sunday }}h S, {{ payslip.ot_hours_sunday_triple }}h T)</span></span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.ot_payment or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Bonus</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.bonus or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Incentive</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.incentive or 0) }}</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center">
+                    <span class="font-bold text-[#14181F] text-base uppercase">Gross Salary</span>
+                    <span class="font-mono font-bold text-[#2F6F63] text-lg">{{ "{:,.2f}".format(payslip.gross_salary or 0) }}</span>
+                </div>
+            </div>
+
+            <!-- Deductions -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-[#14181F] mb-4 border-b border-gray-100 pb-2">Deductions</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">EPF Employee (8%)</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.epf_employee or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">No Pay Deduction</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.no_pay_deduction or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Salary Advance</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.salary_advance or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Loan Deduction</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.loan_deduction or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Other Deductions</span>
+                        <span class="font-mono">{{ "{:,.2f}".format(payslip.other_deductions or 0) }}</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center">
+                    <span class="font-bold text-[#14181F] text-base uppercase">Total Deductions</span>
+                    <span class="font-mono font-bold text-[#B3432B] text-lg">{{ "{:,.2f}".format(payslip.total_deductions or 0) }}</span>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Net Salary Bar -->
+        <div class="bg-[#E4EFEC] p-6 text-center border-t border-[#2F6F63] print:border-t-2 print-border print:bg-white">
+            <p class="text-sm text-[#204E45] uppercase tracking-widest font-semibold mb-1 print:text-[#14181F]">Net Salary</p>
+            <p class="text-4xl font-display font-bold text-[#204E45] font-mono print:text-[#14181F]">
+                LKR {{ "{:,.2f}".format(payslip.net_salary or 0) }}
+            </p>
+            <p class="text-xs text-[#2F6F63] mt-2 print:text-gray-500">Status: <span class="font-medium">{{ payslip.status }}</span></p>
+        </div>
+
+        <!-- Extra Info (Attendance + Employer Contribs) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-t border-[#E2E5EA] text-sm print:grid-cols-2 print:divide-x print:divide-y-0 print-border">
+            
+            <div class="p-6 bg-[#F7F8FA] print:bg-white">
+                <h4 class="font-semibold text-gray-700 mb-3">Attendance Summary</h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex justify-between"><span class="text-gray-500">Working Days</span><span class="font-medium">{{ payslip.working_days }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">No Pay Days</span><span class="font-medium">{{ payslip.no_pay_days }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Late Arrivals</span><span class="font-medium">{{ payslip.late_arrivals }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Early Departures</span><span class="font-medium">{{ payslip.early_departures }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Absences</span><span class="font-medium">{{ payslip.absences }}</span></div>
+                    
+                    <div class="col-span-2 mt-2 pt-2 border-t border-gray-200">
+                        <p class="text-gray-500 mb-1">Leave Taken:</p>
+                        <span class="mr-3">Annual: <b>{{ payslip.annual_leave_taken }}</b></span>
+                        <span class="mr-3">Casual: <b>{{ payslip.casual_leave_taken }}</b></span>
+                        <span>Medical: <b>{{ payslip.medical_leave_taken }}</b></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-[#F7F8FA] print:bg-white">
+                <h4 class="font-semibold text-gray-700 mb-3">Company Contributions <span class="text-xs font-normal text-gray-400">(Not Deducted)</span></h4>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">EPF Employer (12%)</span>
+                        <span class="font-mono font-medium">{{ "{:,.2f}".format(payslip.epf_employer or 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">ETF Employer (3%)</span>
+                        <span class="font-mono font-medium">{{ "{:,.2f}".format(payslip.etf_employer or 0) }}</span>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Editable Form (Hidden on Print) -->
+    <div class="mt-8 bg-white rounded-lg shadow-sm border border-[#E2E5EA] p-6 no-print">
+        <h3 class="text-lg font-semibold text-[#14181F] mb-4">Update Adjustments</h3>
+        <form method="POST" action="{{ url_for('update_payslip', year=year, month=month, employee_id=employee.id) }}" class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="w-full md:w-1/4">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Salary Advance</label>
+                <input type="number" step="0.01" name="salary_advance" value="{{ payslip.salary_advance or 0 }}" class="block w-full border border-[#E2E5EA] rounded-md px-3 py-2 text-sm focus:ring-[#2F6F63] focus:border-[#2F6F63]">
+            </div>
+            <div class="w-full md:w-1/4">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Loan Deduction</label>
+                <input type="number" step="0.01" name="loan_deduction" value="{{ payslip.loan_deduction or 0 }}" class="block w-full border border-[#E2E5EA] rounded-md px-3 py-2 text-sm focus:ring-[#2F6F63] focus:border-[#2F6F63]">
+            </div>
+            <div class="w-full md:w-1/4">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Other Deductions</label>
+                <input type="number" step="0.01" name="other_deductions" value="{{ payslip.other_deductions or 0 }}" class="block w-full border border-[#E2E5EA] rounded-md px-3 py-2 text-sm focus:ring-[#2F6F63] focus:border-[#2F6F63]">
+            </div>
+            <div class="w-full md:w-auto">
+                <button type="submit" class="w-full md:w-auto bg-[#2F6F63] hover:bg-[#204E45] text-white px-6 py-2 rounded-md text-sm font-medium transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
