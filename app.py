@@ -840,5 +840,163 @@ def company_settings():
     return render_template("settings.html", annual_bonus=bonus, monthly_incentive=incentive)
 
 
+# ═══════════════════════════════════════════
+# PDF PAYSLIP GENERATION
+# ═══════════════════════════════════════════
+
+@app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/pdf")
+def download_payslip_pdf(year, month, employee_id):
+    """Generate and download a professional PDF payslip."""
+    from io import BytesIO
+    from xhtml2pdf import pisa
+
+    employee = fetch_employee_or_none(employee_id)
+    if employee is None:
+        flash("Employee not found.", "error")
+        return redirect(url_for("payroll_dashboard"))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM payroll WHERE employee_id=%s AND year=%s AND month=%s;",
+                        (employee_id, year, month))
+            payslip = cur.fetchone()
+    finally:
+        conn.close()
+
+    if payslip is None:
+        flash("No payroll record found.", "error")
+        return redirect(url_for("payroll_dashboard", year=year, month=month))
+
+    month_name = calendar.month_name[month]
+    html = render_template("payslip_pdf.html", employee=employee, payslip=payslip,
+                           year=year, month=month, month_name=month_name)
+
+    pdf_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=pdf_buffer)
+
+    if pisa_status.err:
+        flash("Error generating PDF.", "error")
+        return redirect(url_for("view_payslip", year=year, month=month, employee_id=employee_id))
+
+    pdf_buffer.seek(0)
+    filename = f"Payslip_{employee['first_name']}_{employee['last_name']}_{month_name}_{year}.pdf"
+
+    from flask import send_file
+    return send_file(pdf_buffer, mimetype="application/pdf",
+                     as_attachment=True, download_name=filename)
+
+
+# ═══════════════════════════════════════════
+# BANK PAYMENT FILE & PAYMENT TRACKING
+# ═══════════════════════════════════════════
+
+@app.route("/payroll/<int:year>/<int:month>/bank-file")
+def generate_bank_file(year, month):
+    """Generate a CSV bank payment file for all payroll records of the month."""
+    import csv
+    from io import StringIO
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT p.*, e.first_name, e.last_name, e.email,
+                       e.bank_name, e.bank_branch, e.bank_account_number,
+                       e.payment_method, e.employee_category
+                FROM payroll p
+                JOIN employees e ON p.employee_id = e.id
+                WHERE p.year = %s AND p.month = %s AND p.net_salary > 0
+                ORDER BY e.last_name, e.first_name;
+            """, (year, month))
+            records = cur.fetchall()
+    finally:
+        conn.close()
+
+    if not records:
+        flash("No payroll records found for this period.", "error")
+        return redirect(url_for("payroll_dashboard", year=year, month=month))
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow([
+        "Payment Reference", "Employee ID", "Employee Name", "Bank Name",
+        "Bank Branch", "Account Number", "Payment Method", "Net Salary (LKR)",
+        "Pay Period", "Payment Status"
+    ])
+
+    month_name = calendar.month_name[month]
+    for rec in records:
+        ref = f"PAY-{year}{month:02d}-{rec['employee_id']:04d}"
+        writer.writerow([
+            ref,
+            f"EMP-{rec['employee_id']:04d}",
+            f"{rec['first_name']} {rec['last_name']}",
+            rec["bank_name"] or "",
+            rec["bank_branch"] or "",
+            rec["bank_account_number"] or "",
+            rec["payment_method"] or "Bank Transfer",
+            f"{float(rec['net_salary']):.2f}",
+            f"{month_name} {year}",
+            rec.get("payment_status", "Pending"),
+        ])
+
+    # Summary
+    total_net = sum(float(r["net_salary"]) for r in records)
+    writer.writerow([])
+    writer.writerow(["TOTAL", "", f"{len(records)} employees", "", "", "", "", f"{total_net:.2f}", "", ""])
+
+    output.seek(0)
+    filename = f"Bank_Payment_{month_name}_{year}.csv"
+
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/mark-paid", methods=["POST"])
+def mark_payslip_paid(year, month, employee_id):
+    """Mark an individual payslip as paid."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            ref = f"PAY-{year}{month:02d}-{employee_id:04d}"
+            cur.execute("""
+                UPDATE payroll SET payment_status = 'Paid', payment_date = CURRENT_DATE,
+                    payment_reference = %s, status = 'Paid'
+                WHERE employee_id = %s AND year = %s AND month = %s;
+            """, (ref, employee_id, year, month))
+        conn.commit()
+        flash("Payment recorded.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("view_payslip", year=year, month=month, employee_id=employee_id))
+
+
+@app.route("/payroll/<int:year>/<int:month>/mark-all-paid", methods=["POST"])
+def mark_all_paid(year, month):
+    """Mark all payslips for a month as paid."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE payroll SET payment_status = 'Paid', payment_date = CURRENT_DATE,
+                    payment_reference = 'PAY-' || %s || lpad(%s::text, 2, '0') || '-' || lpad(employee_id::text, 4, '0'),
+                    status = 'Paid'
+                WHERE year = %s AND month = %s AND payment_status != 'Paid';
+            """, (str(year), month, year, month))
+            count = cur.rowcount
+        conn.commit()
+        flash(f"{count} payslip(s) marked as paid.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("payroll_dashboard", year=year, month=month))
+
+
 if __name__ == "__main__":
     app.run(debug=True)

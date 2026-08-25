@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payslip — {{ employee.first_name }} {{ employee.last_name }} — {{ month_name }} {{ year }}</title>
+    <style>
+        /* xhtml2pdf uses CSS2 — keep it simple */
+        @page { size: A4; margin: 1.5cm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #14181F; line-height: 1.5; }
+
+        .header { background-color: #2F6F63; color: white; padding: 18px 24px; margin-bottom: 20px; }
+        .header h1 { font-size: 18pt; margin: 0 0 4px 0; }
+        .header p { font-size: 9pt; margin: 0; opacity: 0.9; }
+
+        .info-grid { width: 100%; margin-bottom: 16px; }
+        .info-grid td { padding: 3px 8px; font-size: 9pt; vertical-align: top; }
+        .info-label { color: #6B7280; font-weight: bold; width: 120px; }
+        .info-value { color: #14181F; }
+
+        .section-title { font-size: 11pt; font-weight: bold; color: #2F6F63; border-bottom: 2px solid #2F6F63;
+                         padding-bottom: 4px; margin: 18px 0 10px 0; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .data-table th { background-color: #F3F4F6; text-align: left; padding: 6px 10px; font-size: 9pt;
+                         font-weight: bold; color: #374151; border-bottom: 1px solid #D1D5DB; }
+        .data-table td { padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #E5E7EB; }
+        .data-table .amount { text-align: right; font-family: 'Courier New', monospace; }
+        .data-table .total-row td { font-weight: bold; border-top: 2px solid #374151; border-bottom: none;
+                                     background-color: #F9FAFB; }
+
+        .two-col { width: 100%; }
+        .two-col td { width: 50%; vertical-align: top; padding: 0; }
+        .two-col td:first-child { padding-right: 8px; }
+        .two-col td:last-child { padding-left: 8px; }
+
+        .net-box { background-color: #2F6F63; color: white; padding: 14px 20px; margin: 16px 0;
+                   text-align: center; }
+        .net-box .label { font-size: 10pt; margin-bottom: 2px; }
+        .net-box .amount { font-size: 20pt; font-weight: bold; font-family: 'Courier New', monospace; }
+
+        .company-box { background-color: #E4EFEC; padding: 10px 16px; margin-bottom: 12px; }
+        .company-box h4 { font-size: 9pt; color: #2F6F63; margin-bottom: 6px; }
+        .company-box table { width: 100%; }
+        .company-box td { font-size: 9pt; padding: 2px 0; }
+
+        .attendance-grid { width: 100%; }
+        .attendance-grid td { width: 25%; padding: 4px 8px; font-size: 9pt; }
+        .attendance-grid .att-label { color: #6B7280; }
+        .attendance-grid .att-value { font-weight: bold; }
+
+        .footer { margin-top: 30px; border-top: 1px solid #D1D5DB; padding-top: 10px;
+                  font-size: 8pt; color: #9CA3AF; text-align: center; }
+    </style>
+</head>
+<body>
+    <!-- Company Header -->
+    <div class="header">
+        <h1>PAYSLIP</h1>
+        <p>Pay Period: {{ month_name }} {{ year }} &nbsp; | &nbsp; Generated: {{ now if now else "—" }}</p>
+    </div>
+
+    <!-- Employee Details -->
+    <table class="info-grid">
+        <tr>
+            <td class="info-label">Employee ID</td>
+            <td class="info-value">EMP-{{ "%04d"|format(employee.id) }}</td>
+            <td class="info-label">Employee Name</td>
+            <td class="info-value">{{ employee.first_name }} {{ employee.last_name }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Department</td>
+            <td class="info-value">{{ employee.department }}</td>
+            <td class="info-label">Position</td>
+            <td class="info-value">{{ employee.position }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Category</td>
+            <td class="info-value">{{ employee.employee_category or 'Employee' }}</td>
+            <td class="info-label">Employment Type</td>
+            <td class="info-value">{{ employee.employment_type }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Bank</td>
+            <td class="info-value">{{ employee.bank_name or '—' }} {{ ('(' + employee.bank_branch + ')') if employee.bank_branch else '' }}</td>
+            <td class="info-label">Account No.</td>
+            <td class="info-value">{{ employee.bank_account_number or '—' }}</td>
+        </tr>
+    </table>
+
+    <!-- Earnings & Deductions side by side -->
+    <table class="two-col">
+        <tr>
+            <td>
+                <div class="section-title">Earnings</div>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Description</th><th class="amount">Amount (LKR)</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Basic Salary</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.basic_salary or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Allowances</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.total_allowances or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Overtime Payment
+                                <br><span style="font-size:8pt;color:#6B7280;">
+                                    Weekday: {{ payslip.ot_hours_weekday or 0 }} hrs |
+                                    Sunday: {{ payslip.ot_hours_sunday or 0 }} hrs
+                                </span>
+                            </td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.ot_payment or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Bonus</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.bonus or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Incentive</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.incentive or 0) }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Gross Salary</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.gross_salary or 0) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+            <td>
+                <div class="section-title">Deductions</div>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Description</th><th class="amount">Amount (LKR)</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>EPF — Employee (8%)</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.epf_employee or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>No-Pay Deduction</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.no_pay_deduction or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Salary Advance</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.salary_advance or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Loan Deduction</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.loan_deduction or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Other Deductions</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.other_deductions or 0) }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Total Deductions</td>
+                            <td class="amount">{{ "{:,.2f}".format(payslip.total_deductions or 0) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Net Salary -->
+    <div class="net-box">
+        <div class="label">NET SALARY</div>
+        <div class="amount">LKR {{ "{:,.2f}".format(payslip.net_salary or 0) }}</div>
+    </div>
+
+    <!-- Company Contributions -->
+    <div class="company-box">
+        <h4>Employer Contributions (not deducted from salary)</h4>
+        <table>
+            <tr>
+                <td>EPF — Employer (12%)</td>
+                <td class="amount" style="text-align:right;">LKR {{ "{:,.2f}".format(payslip.epf_employer or 0) }}</td>
+                <td style="width:30px;"></td>
+                <td>ETF — Employer (3%)</td>
+                <td class="amount" style="text-align:right;">LKR {{ "{:,.2f}".format(payslip.etf_employer or 0) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Attendance Summary -->
+    <div class="section-title">Attendance Summary</div>
+    <table class="attendance-grid">
+        <tr>
+            <td class="att-label">Working Days</td>
+            <td class="att-value">{{ payslip.working_days or 0 }}</td>
+            <td class="att-label">Late Arrivals</td>
+            <td class="att-value">{{ payslip.late_arrivals or 0 }}</td>
+        </tr>
+        <tr>
+            <td class="att-label">Absences</td>
+            <td class="att-value">{{ payslip.absences or 0 }}</td>
+            <td class="att-label">No-Pay Days</td>
+            <td class="att-value">{{ payslip.no_pay_days or 0 }}</td>
+        </tr>
+        <tr>
+            <td class="att-label">Annual Leave</td>
+            <td class="att-value">{{ payslip.annual_leave_taken or 0 }} days</td>
+            <td class="att-label">Casual Leave</td>
+            <td class="att-value">{{ payslip.casual_leave_taken or 0 }} days</td>
+        </tr>
+        <tr>
+            <td class="att-label">Medical Leave</td>
+            <td class="att-value">{{ payslip.medical_leave_taken or 0 }} days</td>
+            <td class="att-label">Early Departures</td>
+            <td class="att-value">{{ payslip.early_departures or 0 }}</td>
+        </tr>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+        This is a computer-generated payslip. No signature is required. &nbsp;|&nbsp; Payroll System
+        {% if payslip.payment_reference %}
+        &nbsp;|&nbsp; Payment Ref: {{ payslip.payment_reference }}
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -185,6 +185,9 @@ CREATE TABLE IF NOT EXISTS payroll (
     medical_leave_taken    INTEGER DEFAULT 0,
     -- Meta
     status                 VARCHAR(20) DEFAULT 'Draft',
+    payment_status         VARCHAR(20) DEFAULT 'Pending',
+    payment_date           DATE,
+    payment_reference      VARCHAR(100),
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(employee_id, year, month)
 );
