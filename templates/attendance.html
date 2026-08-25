@@ -11,7 +11,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-[#E2E5EA] overflow-hidden">
         <div class="p-6 border-b border-[#E2E5EA] flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h2 class="text-2xl font-display font-semibold text-[#14181F]">{{ employee.name }}'s Attendance</h2>
+                <h2 class="text-2xl font-display font-semibold text-[#14181F]">{{ employee.first_name }} {{ employee.last_name }}'s Attendance</h2>
                 <p class="text-sm text-gray-500">{{ month_name }} {{ year }}</p>
             </div>
             
@@ -47,12 +47,12 @@
                             <td class="px-3 py-2">
                                 <input type="time" name="day_{{ day.date.day }}_arrival" value="{{ day.arrival_time or '' }}" 
                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }}, {{ 'true' if day.date.weekday() == 5 else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2">
                                 <input type="time" name="day_{{ day.date.day }}_departure" value="{{ day.departure_time or '' }}" 
                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }}, {{ 'true' if day.date.weekday() == 5 else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2">
                                 <select name="day_{{ day.date.day }}_status" 
@@ -74,10 +74,10 @@
                                 </select>
                             </td>
                             <td class="px-3 py-2 text-center">
-                                <input type="checkbox" name="day_{{ day.date.day }}_late" {% if day.late_arrival %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
+                                <span id="late_display_{{ day.date.day }}" class="text-[#B3432B] font-medium">-</span>
                             </td>
                             <td class="px-3 py-2 text-center">
-                                <input type="checkbox" name="day_{{ day.date.day }}_early" {% if day.early_departure %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
+                                <span id="early_display_{{ day.date.day }}" class="text-[#B3432B] font-medium">-</span>
                             </td>
                             <td class="px-3 py-2 font-mono text-gray-700">
                                 <span id="ot_display_{{ day.date.day }}">{{ day.ot_hours_sunday if day.is_sunday else day.ot_hours or '0.0' }}</span>
@@ -104,9 +104,21 @@
 </div>
 
 <script>
-function calcOT(dayNum, isSunday) {
+function formatDuration(hoursDecimal) {
+    if (hoursDecimal <= 0) return "-";
+    const h = Math.floor(hoursDecimal);
+    const m = Math.round((hoursDecimal - h) * 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+}
+
+function calcOT(dayNum, isSunday, isSaturday) {
     const arrInput = document.querySelector(`[name="day_${dayNum}_arrival"]`);
     const depInput = document.querySelector(`[name="day_${dayNum}_departure"]`);
+    const lateSpan = document.getElementById(`late_display_${dayNum}`);
+    const earlySpan = document.getElementById(`early_display_${dayNum}`);
+    const otDisplay = document.getElementById(`ot_display_${dayNum}`);
     
     if (!arrInput || !depInput) return;
     
@@ -116,13 +128,42 @@ function calcOT(dayNum, isSunday) {
     if (arr && dep) {
         const [ah, am] = arr.split(':').map(Number);
         const [dh, dm] = dep.split(':').map(Number);
-        let worked = (dh + dm/60) - (ah + am/60);
-        let ot = Math.max(0, worked - 8);
-        document.getElementById(`ot_display_${dayNum}`).textContent = ot.toFixed(1);
+        
+        let arrTime = ah + am/60;
+        let depTime = dh + dm/60;
+        let worked = depTime - arrTime;
+        
+        let lateHours = 0;
+        let earlyHours = 0;
+        let ot = 0.0;
+        
+        if (isSunday) {
+            ot = Math.max(0, worked);
+        } else if (isSaturday) {
+            if (arrTime > 8.0) lateHours = arrTime - 8.0;
+            if (depTime < 13.0) earlyHours = 13.0 - depTime;
+            if (depTime > 13.0) ot = depTime - 13.0;
+        } else {
+            if (arrTime > 8.0) lateHours = arrTime - 8.0;
+            if (depTime < 17.0) earlyHours = 17.0 - depTime;
+            if (depTime > 17.0) ot = depTime - 17.0;
+        }
+        
+        if (lateSpan) lateSpan.textContent = formatDuration(lateHours);
+        if (earlySpan) earlySpan.textContent = formatDuration(earlyHours);
+        if (otDisplay) otDisplay.textContent = ot.toFixed(2);
     } else {
-        document.getElementById(`ot_display_${dayNum}`).textContent = '0.0';
+        if (lateSpan) lateSpan.textContent = "-";
+        if (earlySpan) earlySpan.textContent = "-";
+        if (otDisplay) otDisplay.textContent = '0.00';
     }
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    {% for day in days %}
+    calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }}, {{ 'true' if day.date.weekday() == 5 else 'false' }});
+    {% endfor %}
+});
 
 function toggleLeaveType(dayNum, statusValue) {
     const leaveSelect = document.getElementById(`leave_type_${dayNum}`);

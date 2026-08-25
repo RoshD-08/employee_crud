@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Daily Attendance{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div>
+    <h1 class="text-2xl font-display font-bold text-ink">Daily Attendance Entry</h1>
+    <p class="text-ink/70 text-sm mt-1">Log arrival and departure times for all employees on a single day.</p>
+  </div>
+  
+  <div class="flex items-center gap-4">
+    <a href="{{ url_for('attendance_dashboard') }}" class="text-sm font-medium text-ink/70 hover:text-ink underline underline-offset-2">Monthly Summary</a>
+    <form class="flex items-center gap-2 bg-paper p-1.5 rounded-md border border-line shadow-sm" method="GET" action="{{ url_for('daily_attendance') }}" id="dateForm">
+    <input type="date" name="date" value="{{ target_date.strftime('%Y-%m-%d') }}" onchange="document.getElementById('dateForm').submit()" class="bg-transparent border-none text-sm focus:ring-0 py-1 px-2 cursor-pointer" />
+  </form>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('daily_attendance', date=target_date.strftime('%Y-%m-%d')) }}">
+<div class="bg-paper border border-line rounded-lg shadow-sm overflow-hidden mb-6">
+  <div class="overflow-x-auto min-w-[1000px]">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-sand/30 border-b border-line text-ink/70 font-display">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Employee</th>
+          <th class="px-3 py-3 font-semibold w-28">Status</th>
+          <th class="px-3 py-3 font-semibold w-28">Leave Type</th>
+          <th class="px-3 py-3 font-semibold w-24">Arrival</th>
+          <th class="px-3 py-3 font-semibold w-24">Departure</th>
+          <th class="px-3 py-3 font-semibold text-center w-20">Late</th>
+          <th class="px-3 py-3 font-semibold text-center w-20">Early</th>
+          <th class="px-3 py-3 font-semibold text-center w-20">OT (Hrs)</th>
+          <th class="px-4 py-3 font-semibold">Notes</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-line">
+        {% for row in records %}
+        <tr class="hover:bg-sand/10 transition-colors">
+          <td class="px-4 py-3 font-medium text-ink">
+            {{ row.first_name }} {{ row.last_name }}
+            <div class="text-xs text-ink/50 font-normal mt-0.5">{{ row.department }}</div>
+          </td>
+          <td class="px-3 py-3">
+            <select name="emp_{{ row.emp_id }}_status" 
+                    class="block w-full border border-line rounded px-2 py-1.5 focus:ring-accent focus:border-accent text-xs"
+                    onchange="toggleLeaveType({{ row.emp_id }}, this.value)">
+                {% for status in attendance_statuses %}
+                <option value="{{ status }}" {% if row.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+            </select>
+          </td>
+          <td class="px-3 py-3">
+            <select name="emp_{{ row.emp_id }}_leave_type" id="leave_type_{{ row.emp_id }}"
+                    class="block w-full border border-line rounded px-2 py-1.5 focus:ring-accent focus:border-accent text-xs"
+                    {% if row.status != 'Leave' %}disabled style="display: none;"{% endif %}>
+                <option value="">-- Select --</option>
+                {% for leave in leave_types %}
+                <option value="{{ leave }}" {% if row.leave_type == leave %}selected{% endif %}>{{ leave }}</option>
+                {% endfor %}
+            </select>
+          </td>
+          <td class="px-3 py-3">
+            <input type="time" name="emp_{{ row.emp_id }}_arrival" value="{{ row.arrival_time }}" 
+                   class="block w-full border border-line rounded px-2 py-1.5 focus:ring-accent focus:border-accent text-xs"
+                   onchange="calcOT({{ row.emp_id }})">
+          </td>
+          <td class="px-3 py-3">
+            <input type="time" name="emp_{{ row.emp_id }}_departure" value="{{ row.departure_time }}" 
+                   class="block w-full border border-line rounded px-2 py-1.5 focus:ring-accent focus:border-accent text-xs"
+                   onchange="calcOT({{ row.emp_id }})">
+          </td>
+          <td class="px-3 py-3 text-center text-xs font-mono text-rust font-medium">
+            <span id="late_display_{{ row.emp_id }}">-</span>
+          </td>
+          <td class="px-3 py-3 text-center text-xs font-mono text-rust font-medium">
+            <span id="early_display_{{ row.emp_id }}">-</span>
+          </td>
+          <td class="px-3 py-3 font-mono text-ink text-center">
+            <span id="ot_display_{{ row.emp_id }}">
+                {{ row.ot_hours_sunday if is_sunday else row.ot_hours or '0.00' }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <input type="text" name="emp_{{ row.emp_id }}_notes" value="{{ row.notes or '' }}" class="block w-full border border-line rounded px-2 py-1.5 focus:ring-accent focus:border-accent text-xs">
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="px-4 py-8 text-center text-ink/50">
+            No active employees found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flex justify-end">
+  <button type="submit" class="bg-accent hover:bg-accent-dark text-white px-6 py-2 rounded-md font-medium text-sm transition-colors shadow-sm">
+      Save All Attendance
+  </button>
+</div>
+</form>
+
+<script>
+const isSunday = {{ 'true' if is_sunday else 'false' }};
+const isSaturday = {{ 'true' if is_saturday else 'false' }};
+
+function formatDuration(hoursDecimal) {
+    if (hoursDecimal <= 0) return "-";
+    const h = Math.floor(hoursDecimal);
+    const m = Math.round((hoursDecimal - h) * 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+}
+
+function calcOT(empId) {
+    const arrInput = document.querySelector(`[name="emp_${empId}_arrival"]`);
+    const depInput = document.querySelector(`[name="emp_${empId}_departure"]`);
+    const lateSpan = document.getElementById(`late_display_${empId}`);
+    const earlySpan = document.getElementById(`early_display_${empId}`);
+    const otDisplay = document.getElementById(`ot_display_${empId}`);
+    
+    if (!arrInput || !depInput) return;
+    
+    const arr = arrInput.value;
+    const dep = depInput.value;
+    
+    if (arr && dep) {
+        const [ah, am] = arr.split(':').map(Number);
+        const [dh, dm] = dep.split(':').map(Number);
+        
+        let arrTime = ah + am/60;
+        let depTime = dh + dm/60;
+        let worked = depTime - arrTime;
+        
+        let lateHours = 0;
+        let earlyHours = 0;
+        let ot = 0.0;
+        
+        if (isSunday) {
+            ot = Math.max(0, worked);
+        } else if (isSaturday) {
+            if (arrTime > 8.0) lateHours = arrTime - 8.0;
+            if (depTime < 13.0) earlyHours = 13.0 - depTime;
+            if (depTime > 13.0) ot = depTime - 13.0;
+        } else {
+            if (arrTime > 8.0) lateHours = arrTime - 8.0;
+            if (depTime < 17.0) earlyHours = 17.0 - depTime;
+            if (depTime > 17.0) ot = depTime - 17.0;
+        }
+        
+        if (lateSpan) lateSpan.textContent = formatDuration(lateHours);
+        if (earlySpan) earlySpan.textContent = formatDuration(earlyHours);
+        if (otDisplay) otDisplay.textContent = ot.toFixed(2);
+    } else {
+        if (lateSpan) lateSpan.textContent = "-";
+        if (earlySpan) earlySpan.textContent = "-";
+        if (otDisplay) otDisplay.textContent = '0.00';
+    }
+}
+
+function toggleLeaveType(empId, statusValue) {
+    const leaveSelect = document.getElementById(`leave_type_${empId}`);
+    if (statusValue === 'Leave') {
+        leaveSelect.disabled = false;
+        leaveSelect.style.display = 'block';
+    } else {
+        leaveSelect.disabled = true;
+        leaveSelect.style.display = 'none';
+        leaveSelect.value = '';
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    {% for row in records %}
+    calcOT({{ row.emp_id }});
+    {% endfor %}
+});
+</script>
+{% endblock %}
