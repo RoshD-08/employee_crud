@@ -47,44 +47,44 @@
   </div>
 
   {% if employees %}
-    <div class="bg-white border border-line rounded-lg overflow-hidden">
-      <table class="w-full text-sm text-left">
+    <div class="bg-white border border-line rounded-lg overflow-x-auto">
+      <table class="w-full text-sm text-left min-w-[900px]">
         <thead>
           <tr class="bg-paper text-ink/60 text-xs uppercase tracking-wide border-b border-line">
-            <th class="px-5 py-3 font-semibold">ID</th>
-            <th class="px-5 py-3 font-semibold">Name</th>
-            <th class="px-5 py-3 font-semibold">Department</th>
-            <th class="px-5 py-3 font-semibold">Position</th>
-            <th class="px-5 py-3 font-semibold">Category</th>
-            <th class="px-5 py-3 font-semibold">Type</th>
-            <th class="px-5 py-3 font-semibold">Status</th>
-            <th class="px-5 py-3 font-semibold text-right">Gross Salary</th>
-            <th class="px-5 py-3 font-semibold">Hired</th>
-            <th class="px-5 py-3 font-semibold text-right">Actions</th>
+            <th class="px-3 py-3 font-semibold">ID</th>
+            <th class="px-3 py-3 font-semibold">Name</th>
+            <th class="px-3 py-3 font-semibold">Department</th>
+            <th class="px-3 py-3 font-semibold">Position</th>
+            <th class="px-3 py-3 font-semibold">Category</th>
+            <th class="px-3 py-3 font-semibold">Type</th>
+            <th class="px-3 py-3 font-semibold">Status</th>
+            <th class="px-3 py-3 font-semibold text-right">Gross Salary</th>
+            <th class="px-3 py-3 font-semibold">Hired</th>
+            <th class="px-3 py-3 font-semibold text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-line">
           {% for employee in employees %}
             <tr class="hover:bg-paper/70 transition-colors">
-              <td class="px-5 py-3">
-                <span class="font-mono text-xs text-accent-dark bg-accent-light rounded px-1.5 py-0.5">
+              <td class="px-3 py-3">
+                <span class="font-mono text-xs text-accent-dark bg-accent-light rounded px-1.5 py-0.5 whitespace-nowrap">
                   EMP-{{ "%04d"|format(employee.id) }}
                 </span>
               </td>
-              <td class="px-5 py-3 font-medium text-ink">{{ employee.first_name }} {{ employee.last_name }}</td>
-              <td class="px-5 py-3 text-ink/80">{{ employee.department }}</td>
-              <td class="px-5 py-3 text-ink/80">{{ employee.position }}</td>
-              <td class="px-5 py-3">
+              <td class="px-3 py-3 font-medium text-ink whitespace-nowrap">{{ employee.first_name }} {{ employee.last_name }}</td>
+              <td class="px-3 py-3 text-ink/80">{{ employee.department }}</td>
+              <td class="px-3 py-3 text-ink/80">{{ employee.position }}</td>
+              <td class="px-3 py-3">
                 {% if employee.employee_category == 'Employee' %}
-                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-blue-50 text-blue-700">Employee</span>
+                  <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700">Employee</span>
                 {% elif employee.employee_category == 'Labourer' %}
-                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-amber-50 text-amber-700">Labourer</span>
+                  <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700">Labourer</span>
                 {% else %}
-                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-50 text-gray-700">{{ employee.employee_category or '—' }}</span>
+                  <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-gray-50 text-gray-700">{{ employee.employee_category or '—' }}</span>
                 {% endif %}
               </td>
-              <td class="px-5 py-3 text-ink/70">{{ employee.employment_type }}</td>
-              <td class="px-5 py-3">
+              <td class="px-3 py-3 text-ink/70">{{ employee.employment_type }}</td>
+              <td class="px-3 py-3">
                 {% set status = employee.employment_status %}
                 {% set badge_class = "bg-gray-100 text-gray-600" %}
                 {% if status == 'Active' %}
@@ -98,29 +98,29 @@
                 {% elif status == 'Resigned' %}
                   {% set badge_class = "bg-gray-100 text-gray-600" %}
                 {% endif %}
-                <span class="inline-block px-2 py-1 rounded text-xs font-semibold {{ badge_class }}">
+                <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {{ badge_class }}">
                   {{ status }}
                 </span>
               </td>
-              <td class="px-5 py-3 text-right font-mono text-ink/80">
+              <td class="px-3 py-3 text-right font-mono text-ink/80 whitespace-nowrap">
                 {% set gross = employee.salary + (employee.housing_allowance or 0) + (employee.transport_allowance or 0) + (employee.medical_allowance or 0) + (employee.other_allowance or 0) %}
                 {{ "{:,.2f}".format(gross) }}
               </td>
-              <td class="px-5 py-3 text-ink/70">{{ employee.hire_date }}</td>
-              <td class="px-5 py-3">
-                <div class="flex justify-end gap-2">
+              <td class="px-3 py-3 text-ink/70 whitespace-nowrap">{{ employee.hire_date }}</td>
+              <td class="px-3 py-3">
+                <div class="flex justify-end gap-1.5 whitespace-nowrap">
                   <a href="{{ url_for('view_employee', employee_id=employee.id) }}"
-                     class="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink/80 hover:bg-paper transition-colors">
+                     class="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-ink/80 hover:bg-paper transition-colors">
                     View
                   </a>
                   <a href="{{ url_for('edit_employee', employee_id=employee.id) }}"
-                     class="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink/80 hover:bg-paper transition-colors">
+                     class="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-ink/80 hover:bg-paper transition-colors">
                     Edit
                   </a>
                   <form method="POST" action="{{ url_for('delete_employee', employee_id=employee.id) }}"
                         onsubmit="return confirm('Remove {{ employee.first_name }} {{ employee.last_name }} from the roster? This cannot be undone.');">
                     <button type="submit"
-                            class="rounded-md border border-rust/30 px-3 py-1.5 text-xs font-semibold text-rust hover:bg-rust-light transition-colors">
+                            class="rounded-md border border-rust/30 px-2.5 py-1.5 text-xs font-semibold text-rust hover:bg-rust-light transition-colors">
                       Delete
                     </button>
                   </form>
