@@ -366,9 +366,19 @@ def add_employee():
                 if lat is None and data["address"]:
                     flash("Couldn't locate that address on the map.", "error")
                 return redirect(url_for("list_employees"))
-            except psycopg2.errors.UniqueViolation:
+            except psycopg2.errors.UniqueViolation as e:
                 conn.rollback()
-                errors.append("An employee with that email already exists.")
+                err_msg = str(e)
+                if "email" in err_msg:
+                    errors.append("An employee with that email already exists.")
+                elif "tax_id" in err_msg:
+                    errors.append("An employee with that Tax ID already exists.")
+                elif "epf_number" in err_msg:
+                    errors.append("An employee with that EPF Number already exists.")
+                elif "esi_number" in err_msg:
+                    errors.append("An employee with that ESI Number already exists.")
+                else:
+                    errors.append("A unique constraint violation occurred.")
             finally:
                 conn.close()
         for e in errors: flash(e, "error")
@@ -402,9 +412,19 @@ def edit_employee(employee_id):
                 conn.commit()
                 flash(f"{data['first_name']} {data['last_name']} was updated.", "success")
                 return redirect(url_for("list_employees"))
-            except psycopg2.errors.UniqueViolation:
+            except psycopg2.errors.UniqueViolation as e:
                 conn.rollback()
-                errors.append("An employee with that email already exists.")
+                err_msg = str(e)
+                if "email" in err_msg:
+                    errors.append("An employee with that email already exists.")
+                elif "tax_id" in err_msg:
+                    errors.append("An employee with that Tax ID already exists.")
+                elif "epf_number" in err_msg:
+                    errors.append("An employee with that EPF Number already exists.")
+                elif "esi_number" in err_msg:
+                    errors.append("An employee with that ESI Number already exists.")
+                else:
+                    errors.append("A unique constraint violation occurred.")
             finally:
                 conn.close()
         for e in errors: flash(e, "error")
@@ -660,6 +680,54 @@ def save_attendance(employee_id, year, month):
         conn.close()
 
     return redirect(url_for("employee_attendance", employee_id=employee_id, year=year, month=month))
+
+
+
+@app.route("/attendance")
+@login_required
+def attendance_dashboard():
+    year = request.args.get("year", default=datetime.now().year, type=int)
+    month = request.args.get("month", default=datetime.now().month, type=int)
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Get start and end date for the month
+            num_days = calendar.monthrange(year, month)[1]
+            start_date = date(year, month, 1)
+            end_date = date(year, month, num_days)
+            
+            cur.execute('''
+                SELECT 
+                    e.id, e.first_name, e.last_name, e.department,
+                    COUNT(a.id) FILTER (WHERE a.status = 'Present') as working_days,
+                    COUNT(a.id) FILTER (WHERE a.status = 'Absent') as absences,
+                    COUNT(a.id) FILTER (WHERE a.status = 'No-pay') as no_pay_days,
+                    COUNT(a.id) FILTER (WHERE a.late_arrival = true) as late_arrivals,
+                    COUNT(a.id) FILTER (WHERE a.early_departure = true) as early_departures,
+                    COALESCE(SUM(a.ot_hours), 0) as weekday_ot,
+                    COALESCE(SUM(a.ot_hours_sunday), 0) as sunday_ot,
+                    COUNT(a.id) FILTER (WHERE a.status = 'Leave') as leave_days
+                FROM employees e
+                LEFT JOIN attendance a ON e.id = a.employee_id 
+                    AND a.work_date >= %s AND a.work_date <= %s
+                WHERE e.employment_status = 'Active'
+                GROUP BY e.id
+                ORDER BY e.first_name, e.last_name;
+            ''', (start_date, end_date))
+            
+            records = cur.fetchall()
+            
+            # Prepare months list for the dropdown
+            months = [(i, calendar.month_name[i]) for i in range(1, 13)]
+            month_name = calendar.month_name[month]
+    finally:
+        conn.close()
+        
+    return render_template("attendance_dashboard.html", 
+                           records=records, 
+                           year=year, month=month, 
+                           months=months, month_name=month_name)
 
 
 # ═══════════════════════════════════════════
