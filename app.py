@@ -36,12 +36,72 @@ from decimal import Decimal
 import psycopg2
 import psycopg2.extras
 import requests
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, g
 
 from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# ── Authentication ──
+@app.before_request
+def load_logged_in_user():
+    g.user = None
+    if 'user_id' in session:
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT id, username, role FROM users WHERE id = %s", (session['user_id'],))
+                g.user = cur.fetchone()
+        finally:
+            conn.close()
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if g.user is None:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def role_required(*roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if g.user is None or g.user['role'] not in roles:
+                flash("You do not have permission to access this page.", "error")
+                return redirect(url_for('list_employees'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+                user = cur.fetchone()
+                if user and check_password_hash(user['password_hash'], password):
+                    session.clear()
+                    session['user_id'] = user['id']
+                    return redirect(request.args.get('next') or url_for('list_employees'))
+                else:
+                    flash('Invalid username or password.', 'error')
+        finally:
+            conn.close()
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 
 # ── Constants ──
 
@@ -254,6 +314,7 @@ _UPDATE_SQL = f"UPDATE employees SET {_UPDATE_SETS} WHERE id = %s;"
 # ═══════════════════════════════════════════
 
 @app.route("/")
+@login_required
 def list_employees():
     search = request.args.get("q", "").strip()
     department = request.args.get("department", "").strip()
@@ -284,6 +345,9 @@ def list_employees():
 
 
 @app.route("/employees/new", methods=["GET", "POST"])
+@login_required
+@role_required("Admin", "HR")
+
 def add_employee():
     if request.method == "POST":
         data, errors = validate_employee_form(request.form)
@@ -313,6 +377,9 @@ def add_employee():
 
 
 @app.route("/employees/<int:employee_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("Admin", "HR")
+
 def edit_employee(employee_id):
     existing = fetch_employee_or_none(employee_id)
     if existing is None:
@@ -347,6 +414,9 @@ def edit_employee(employee_id):
 
 
 @app.route("/employees/<int:employee_id>/delete", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
+
 def delete_employee(employee_id):
     existing = fetch_employee_or_none(employee_id)
     if existing is None:
@@ -364,6 +434,8 @@ def delete_employee(employee_id):
 
 
 @app.route("/employees/<int:employee_id>")
+@login_required
+
 def view_employee(employee_id):
     employee = fetch_employee_or_none(employee_id)
     if employee is None:
@@ -375,6 +447,8 @@ def view_employee(employee_id):
 
 
 @app.route("/map")
+@login_required
+
 def employees_map():
     conn = get_db_connection()
     try:
@@ -417,6 +491,8 @@ def geocode_address(address):
 
 
 @app.route("/api/reverse-geocode")
+@login_required
+
 def reverse_geocode():
     try:
         lat = float(request.args.get("lat", ""))
@@ -440,6 +516,7 @@ def reverse_geocode():
 # ═══════════════════════════════════════════
 
 @app.route("/employees/<int:employee_id>/attendance/<int:year>/<int:month>")
+@login_required
 def employee_attendance(employee_id, year, month):
     employee = fetch_employee_or_none(employee_id)
     if employee is None:
@@ -501,6 +578,8 @@ def employee_attendance(employee_id, year, month):
 
 
 @app.route("/employees/<int:employee_id>/attendance/<int:year>/<int:month>", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
 def save_attendance(employee_id, year, month):
     employee = fetch_employee_or_none(employee_id)
     if employee is None:
@@ -606,6 +685,7 @@ def _calculate_ot_payment(basic, category, weekday_hours, sunday_hours):
 
 
 @app.route("/payroll")
+@login_required
 def payroll_dashboard():
     now = date.today()
     year = int(request.args.get("year", now.year))
@@ -636,6 +716,8 @@ def payroll_dashboard():
 
 
 @app.route("/payroll/generate/<int:year>/<int:month>", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
 def generate_payroll(year, month):
     """Auto-generate payroll for all active employees from attendance data."""
     bonus = float(get_company_setting("annual_bonus", "0"))
@@ -723,7 +805,8 @@ def generate_payroll(year, month):
                         annual_leave_taken=EXCLUDED.annual_leave_taken,
                         casual_leave_taken=EXCLUDED.casual_leave_taken,
                         medical_leave_taken=EXCLUDED.medical_leave_taken,
-                        status='Draft';
+                        status='Draft'
+                    WHERE payroll.status = 'Draft';
                 """, (eid, year, month, basic, total_allowances,
                       ot_weekday, ot_sunday, sun_triple_hours,
                       ot_payment, month_bonus, incentive, gross,
@@ -745,6 +828,7 @@ def generate_payroll(year, month):
 
 
 @app.route("/payroll/<int:year>/<int:month>/<int:employee_id>")
+@login_required
 def view_payslip(year, month, employee_id):
     employee = fetch_employee_or_none(employee_id)
     if employee is None:
@@ -770,6 +854,8 @@ def view_payslip(year, month, employee_id):
 
 
 @app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/update", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
 def update_payslip(year, month, employee_id):
     """Update manual deductions and recalculate net salary."""
     salary_advance = float(request.form.get("salary_advance", "0") or 0)
@@ -810,6 +896,8 @@ def update_payslip(year, month, employee_id):
 # ═══════════════════════════════════════════
 
 @app.route("/settings", methods=["GET", "POST"])
+@login_required
+@role_required("Admin")
 def company_settings():
     if request.method == "POST":
         bonus = request.form.get("annual_bonus", "0").strip()
@@ -845,6 +933,7 @@ def company_settings():
 # ═══════════════════════════════════════════
 
 @app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/pdf")
+@login_required
 def download_payslip_pdf(year, month, employee_id):
     """Generate and download a professional PDF payslip."""
     from io import BytesIO
@@ -892,6 +981,8 @@ def download_payslip_pdf(year, month, employee_id):
 # ═══════════════════════════════════════════
 
 @app.route("/payroll/<int:year>/<int:month>/bank-file")
+@login_required
+@role_required("Admin", "Finance")
 def generate_bank_file(year, month):
     """Generate a CSV bank payment file for all payroll records of the month."""
     import csv
@@ -960,6 +1051,8 @@ def generate_bank_file(year, month):
 
 
 @app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/mark-paid", methods=["POST"])
+@login_required
+@role_required("Admin", "Finance")
 def mark_payslip_paid(year, month, employee_id):
     """Mark an individual payslip as paid."""
     conn = get_db_connection()
@@ -979,6 +1072,8 @@ def mark_payslip_paid(year, month, employee_id):
 
 
 @app.route("/payroll/<int:year>/<int:month>/mark-all-paid", methods=["POST"])
+@login_required
+@role_required("Admin", "Finance")
 def mark_all_paid(year, month):
     """Mark all payslips for a month as paid."""
     conn = get_db_connection()
@@ -997,6 +1092,43 @@ def mark_all_paid(year, month):
         conn.close()
     return redirect(url_for("payroll_dashboard", year=year, month=month))
 
+
+@app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/approve", methods=["POST"])
+@login_required
+@role_required("Admin", "Finance")
+def approve_payslip(year, month, employee_id):
+    """Finance approves a draft payslip."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE payroll SET status = 'Approved'
+                WHERE employee_id = %s AND year = %s AND month = %s AND status = 'Draft';
+            """, (employee_id, year, month))
+        conn.commit()
+        flash("Payslip approved.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("view_payslip", year=year, month=month, employee_id=employee_id))
+
+@app.route("/payroll/<int:year>/<int:month>/approve-all", methods=["POST"])
+@login_required
+@role_required("Admin", "Finance")
+def approve_all(year, month):
+    """Finance approves all draft payslips for a month."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE payroll SET status = 'Approved'
+                WHERE year = %s AND month = %s AND status = 'Draft';
+            """, (year, month))
+            count = cur.rowcount
+        conn.commit()
+        flash(f"{count} payslip(s) approved.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("payroll_dashboard", year=year, month=month))
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -32,12 +32,22 @@
                 {% if payslip.payment_reference %} &middot; Ref: {{ payslip.payment_reference }}{% endif %}
               </span>
             {% else %}
-              <form method="POST" action="{{ url_for('mark_payslip_paid', year=year, month=month, employee_id=employee.id) }}"
-                    onsubmit="return confirm('Mark this payslip as paid?');">
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-semibold transition-colors">
-                  &#10003; Mark as Paid
-                </button>
-              </form>
+              {% if g.user and g.user.role in ["Admin", "Finance"] %}
+                {% if payslip.status == 'Draft' %}
+                  <form method="POST" action="{{ url_for('approve_payslip', year=year, month=month, employee_id=employee.id) }}">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold transition-colors">
+                      Approve Payslip
+                    </button>
+                  </form>
+                {% elif payslip.status == 'Approved' %}
+                  <form method="POST" action="{{ url_for('mark_payslip_paid', year=year, month=month, employee_id=employee.id) }}"
+                        onsubmit="return confirm('Mark this payslip as paid?');">
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-semibold transition-colors">
+                      &#10003; Mark as Paid
+                    </button>
+                  </form>
+                {% endif %}
+              {% endif %}
             {% endif %}
             <a href="{{ url_for('download_payslip_pdf', year=year, month=month, employee_id=employee.id) }}"
                class="bg-[#2F6F63] hover:bg-[#204E45] text-white px-4 py-2 rounded-md text-sm font-semibold transition-colors flex items-center">

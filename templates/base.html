@@ -52,28 +52,44 @@
 <body class="bg-paper text-ink font-body antialiased min-h-screen flex flex-col">
 
   <header class="bg-ink text-white roster-texture">
-    <div class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-wrap gap-4 items-center justify-between">
       <a href="{{ url_for('list_employees') }}" class="flex items-center gap-3">
         <span class="font-mono text-xs tracking-widest border border-white/30 rounded px-2 py-1 text-accent-light/90">PAY&middot;SYS</span>
         <span class="font-display font-bold text-xl tracking-tight">Payroll System</span>
       </a>
       <div class="flex items-center gap-3">
-        <a href="{{ url_for('payroll_dashboard') }}"
-           class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
-          Payroll
-        </a>
-        <a href="{{ url_for('employees_map') }}"
-           class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
-          Map view
-        </a>
-        <a href="{{ url_for('company_settings') }}"
-           class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
-          Settings
-        </a>
-        <a href="{{ url_for('add_employee') }}"
-           class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark transition-colors text-white text-sm font-semibold px-4 py-2 rounded-md">
-          <span class="text-lg leading-none">+</span> New employee
-        </a>
+        {% if g.user %}
+          <div class="mr-4 flex items-center gap-2 border-r border-white/20 pr-4">
+            <div class="text-right">
+              <div class="text-sm font-semibold text-white leading-tight">{{ g.user.username }}</div>
+              <div class="text-[10px] uppercase tracking-wider text-accent-light opacity-80">{{ g.user.role }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="ml-2 text-xs text-white/50 hover:text-white transition-colors">Logout</a>
+          </div>
+          
+          <a href="{{ url_for('payroll_dashboard') }}"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Payroll
+          </a>
+          <a href="{{ url_for('employees_map') }}"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Map
+          </a>
+          
+          {% if g.user.role == 'Admin' %}
+            <a href="{{ url_for('company_settings') }}"
+               class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+              Settings
+            </a>
+          {% endif %}
+          
+          {% if g.user.role in ['Admin', 'HR'] %}
+            <a href="{{ url_for('add_employee') }}"
+               class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark transition-colors text-white text-sm font-semibold px-4 py-2 rounded-md">
+              <span class="text-lg leading-none">+</span> New
+            </a>
+          {% endif %}
+        {% endif %}
       </div>
     </div>
   </header>

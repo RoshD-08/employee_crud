@@ -33,6 +33,7 @@
         <p class="text-sm text-white/70 mt-1">{{ employee.position or '—' }} &middot; {{ employee.department or '—' }}</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
+        {% if g.user and g.user.role in ["Admin", "HR"] %}
         <a href="{{ url_for('edit_employee', employee_id=employee.id) }}"
            class="rounded-md bg-accent hover:bg-accent-dark transition-colors text-white text-sm font-semibold px-4 py-2">
           Edit
@@ -44,6 +45,7 @@
             Delete
           </button>
         </form>
+        {% endif %}
       </div>
     </div>
 

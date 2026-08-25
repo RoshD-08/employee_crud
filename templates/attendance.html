@@ -47,17 +47,17 @@
                             <td class="px-3 py-2">
                                 <input type="time" name="day_{{ day.date.day }}_arrival" value="{{ day.arrival_time or '' }}" 
                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})">
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2">
                                 <input type="time" name="day_{{ day.date.day }}_departure" value="{{ day.departure_time or '' }}" 
                                        class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})">
+                                       onchange="calcOT({{ day.date.day }}, {{ 'true' if day.is_sunday else 'false' }})" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2">
                                 <select name="day_{{ day.date.day }}_status" 
                                         class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                        onchange="toggleLeaveType({{ day.date.day }}, this.value)">
+                                        onchange="toggleLeaveType({{ day.date.day }}, this.value)" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                                     {% for status in attendance_statuses %}
                                     <option value="{{ status }}" {% if day.status == status %}selected{% endif %}>{{ status }}</option>
                                     {% endfor %}
@@ -66,7 +66,7 @@
                             <td class="px-3 py-2">
                                 <select name="day_{{ day.date.day }}_leave_type" id="leave_type_{{ day.date.day }}"
                                         class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs"
-                                        {% if day.status != 'Leave' %}disabled style="display: none;"{% endif %}>
+                                        {% if day.status != 'Leave' %}disabled style="display: none;"{% endif %} {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                                     <option value="">-- Select --</option>
                                     {% for leave in leave_types %}
                                     <option value="{{ leave }}" {% if day.leave_type == leave %}selected{% endif %}>{{ leave }}</option>
@@ -74,16 +74,16 @@
                                 </select>
                             </td>
                             <td class="px-3 py-2 text-center">
-                                <input type="checkbox" name="day_{{ day.date.day }}_late" {% if day.late_arrival %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]">
+                                <input type="checkbox" name="day_{{ day.date.day }}_late" {% if day.late_arrival %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2 text-center">
-                                <input type="checkbox" name="day_{{ day.date.day }}_early" {% if day.early_departure %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]">
+                                <input type="checkbox" name="day_{{ day.date.day }}_early" {% if day.early_departure %}checked{% endif %} class="rounded text-[#2F6F63] focus:ring-[#2F6F63]" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                             <td class="px-3 py-2 font-mono text-gray-700">
                                 <span id="ot_display_{{ day.date.day }}">{{ day.ot_hours_sunday if day.is_sunday else day.ot_hours or '0.0' }}</span>
                             </td>
                             <td class="px-3 py-2">
-                                <input type="text" name="day_{{ day.date.day }}_notes" value="{{ day.notes or '' }}" class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs">
+                                <input type="text" name="day_{{ day.date.day }}_notes" value="{{ day.notes or '' }}" class="block w-full border border-[#E2E5EA] rounded px-2 py-1 focus:ring-[#2F6F63] focus:border-[#2F6F63] text-xs" {% if g.user and g.user.role == "Finance" %}disabled{% endif %} >
                             </td>
                         </tr>
                         {% endfor %}

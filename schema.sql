@@ -4,6 +4,24 @@
 --   createdb employee_db
 --   psql -d employee_db -f schema.sql
 
+-- ── Authentication & RBAC ──
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'HR', 'Finance')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Default users (password: 'password123')
+INSERT INTO users (username, password_hash, role)
+VALUES 
+    ('admin', 'scrypt:32768:8:1$c0rPVVcHsJL3woTa$19ec59bbb199561e00b233fe22b8f04288bcfb47de1dd1674890138ad48f578400785931377d2bb9f1a6e376482fd3a12f37e8561c03ad6a658ff01e76cfa39f', 'Admin'),
+    ('hr', 'scrypt:32768:8:1$c0rPVVcHsJL3woTa$19ec59bbb199561e00b233fe22b8f04288bcfb47de1dd1674890138ad48f578400785931377d2bb9f1a6e376482fd3a12f37e8561c03ad6a658ff01e76cfa39f', 'HR'),
+    ('finance', 'scrypt:32768:8:1$c0rPVVcHsJL3woTa$19ec59bbb199561e00b233fe22b8f04288bcfb47de1dd1674890138ad48f578400785931377d2bb9f1a6e376482fd3a12f37e8561c03ad6a658ff01e76cfa39f', 'Finance')
+ON CONFLICT (username) DO NOTHING;
+
+
 CREATE TABLE IF NOT EXISTS employees (
     id             SERIAL PRIMARY KEY,
     first_name     VARCHAR(50)    NOT NULL,
