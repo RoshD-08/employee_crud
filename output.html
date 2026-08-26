@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advances & Loans</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>    
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#14181F",
+            paper: "#F7F8FA",
+            accent: {
+              DEFAULT: "#2F6F63",
+              light: "#E4EFEC",
+              dark: "#204E45",
+            },
+            rust: {
+              DEFAULT: "#B3432B",
+              light: "#F7E7E2",
+            },
+            line: "#E2E5EA",
+          },
+          fontFamily: {
+            display: ['"Sora"', "sans-serif"],
+            body: ['"Inter"', "sans-serif"],
+            mono: ['"IBM Plex Mono"', "monospace"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Subtle stamped-grid texture behind the header — a quiet nod to a paper roster/ledger */
+    .roster-texture {
+      background-image:
+        linear-gradient(to right, #ffffff10 1px, transparent 1px),
+        linear-gradient(to bottom, #ffffff10 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+  </style>
+</head>
+<body class="bg-paper text-ink font-body antialiased min-h-screen flex flex-col">
+
+  <header class="bg-ink text-white roster-texture">
+    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-wrap gap-4 items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <span class="font-mono text-xs tracking-widest border border-white/30 rounded px-2 py-1 text-accent-light/90">PAY&middot;SYS</span>
+        <span class="font-display font-bold text-xl tracking-tight">Payroll System</span>
+      </a>
+      <div class="flex items-center gap-3">
+        
+          <div class="mr-4 flex items-center gap-2 border-r border-white/20 pr-4">
+            <div class="text-right">
+              <div class="text-sm font-semibold text-white leading-tight">admin</div>
+              <div class="text-[10px] uppercase tracking-wider text-accent-light opacity-80">Admin</div>
+            </div>
+            <a href="/logout" class="ml-2 text-xs text-white/50 hover:text-white transition-colors">Logout</a>
+          </div>
+          
+          <a href="/payroll"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Payroll
+          </a>
+          <a href="/advances-loans"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Advances & Loans
+          </a>
+
+          <a href="/attendance/daily"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Attendance
+          </a>
+          <a href="/map"
+             class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+            Map
+          </a>
+          
+          
+            <a href="/settings"
+               class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
+              Settings
+            </a>
+          
+          
+          
+            <a href="/employees/new"
+               class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark transition-colors text-white text-sm font-semibold px-4 py-2 rounded-md">
+              <span class="text-lg leading-none">+</span> New
+            </a>
+          
+        
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+
+      
+        
+      
+
+      
+<div class="flex items-center justify-between mb-8 pb-4 border-b border-line">
+  <div>
+    <h1 class="font-display font-bold text-3xl">Advances & Loans</h1>
+    <p class="text-ink/60 text-sm mt-1">Manage employee financial requests</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+  <!-- Advances Section -->
+  <div class="bg-white rounded-lg shadow-sm border border-line p-6">
+    <h2 class="font-display font-semibold text-xl mb-4">Advances</h2>
+    <form action="/advances/new" method="POST" class="mb-6 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Employee</label>
+        <select name="employee_id" required class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+          
+          <option value="1">Amara Silva (185000.00)</option>
+          
+          <option value="3">Ishara Fernando (190000.00)</option>
+          
+          <option value="14">John Doe (1000.00)</option>
+          
+          <option value="2">Nuwan Perera (145000.00)</option>
+          
+          <option value="7">Roshane Dias (1000000.00)</option>
+          
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Amount</label>
+        <input type="number" name="amount" step="0.01" required class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+        <p class="text-xs text-ink/60 mt-1">Max 40% of salary.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Reason</label>
+        <input type="text" name="reason" class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+      </div>
+      <button type="submit" class="bg-ink hover:bg-ink/80 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">Record Advance</button>
+    </form>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse min-w-[400px]">
+        <thead>
+          <tr class="border-b border-line">
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Employee</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Amount</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Status</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Action</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm divide-y divide-line">
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Loans Section -->
+  <div class="bg-white rounded-lg shadow-sm border border-line p-6">
+    <h2 class="font-display font-semibold text-xl mb-4">Loans</h2>
+    <form action="/loans/new" method="POST" class="mb-6 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Employee</label>
+        <select name="employee_id" required class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+          
+          <option value="1">Amara Silva (185000.00)</option>
+          
+          <option value="3">Ishara Fernando (190000.00)</option>
+          
+          <option value="14">John Doe (1000.00)</option>
+          
+          <option value="2">Nuwan Perera (145000.00)</option>
+          
+          <option value="7">Roshane Dias (1000000.00)</option>
+          
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Amount</label>
+          <input type="number" name="amount" step="0.01" required class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+          <p class="text-xs text-ink/60 mt-1">Max 2x salary.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Installments</label>
+          <input type="number" name="installments" min="1" max="12" required class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+          <p class="text-xs text-ink/60 mt-1">Max 12 months.</p>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Reason</label>
+        <input type="text" name="reason" class="w-full border border-line rounded px-3 py-2 text-sm focus:outline-none focus:border-accent">
+      </div>
+      <button type="submit" class="bg-ink hover:bg-ink/80 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">Record Loan</button>
+    </form>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse min-w-[400px]">
+        <thead>
+          <tr class="border-b border-line">
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Employee</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Amount</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Inst.</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Status</th>
+            <th class="py-3 px-2 text-xs font-semibold text-ink/60 uppercase">Action</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm divide-y divide-line">
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+    </div>
+  </main>
+
+  <footer class="border-t border-line">
+    <div class="max-w-6xl mx-auto px-6 py-5 text-xs text-ink/50 font-mono">
+      Payroll System &middot; internal records
+    </div>
+  </footer>
+
+  
+</body>
+</html>

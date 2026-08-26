@@ -984,6 +984,7 @@ def generate_payroll(year, month):
                 # --- Advances Deduction ---
                 cur.execute("SELECT id, amount FROM advances WHERE employee_id = %s AND status = 'Approved'", (eid,))
                 new_advances = cur.fetchall()
+                print("EID:", eid, "NEW ADV:", new_advances)
                 for adv in new_advances:
                     cur.execute("UPDATE advances SET status = 'Deducted', deduction_year = %s, deduction_month = %s WHERE id = %s", (year, month, adv["id"]))
                 

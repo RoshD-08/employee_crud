@@ -221,3 +221,38 @@ CREATE TABLE IF NOT EXISTS company_settings (
 INSERT INTO company_settings (setting_key, setting_value)
 VALUES ('annual_bonus', '0'), ('monthly_incentive', '0')
 ON CONFLICT (setting_key) DO NOTHING;
+-- ── Advances & Loans ──
+CREATE TABLE IF NOT EXISTS advances (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
+    date_requested DATE NOT NULL DEFAULT CURRENT_DATE,
+    reason TEXT,
+    status VARCHAR(20) DEFAULT 'Pending',
+    deduction_year INTEGER,
+    deduction_month INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS loans (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
+    installments INTEGER NOT NULL CHECK (installments > 0 AND installments <= 12),
+    monthly_installment NUMERIC(10, 2) NOT NULL,
+    remaining_amount NUMERIC(10, 2) NOT NULL,
+    remaining_installments INTEGER NOT NULL,
+    date_requested DATE NOT NULL DEFAULT CURRENT_DATE,
+    reason TEXT,
+    status VARCHAR(20) DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS loan_installments (
+    id SERIAL PRIMARY KEY,
+    loan_id INTEGER NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
