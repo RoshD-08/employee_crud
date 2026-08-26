@@ -980,7 +980,33 @@ def generate_payroll(year, month):
                 month_bonus = bonus if month == 12 else 0
 
                 gross = basic + total_allowances + ot_payment + month_bonus + incentive
-                total_deductions = epf_employee + no_pay_deduction
+
+                # --- Advances Deduction ---
+                cur.execute("SELECT id, amount FROM advances WHERE employee_id = %s AND status = 'Approved'", (eid,))
+                new_advances = cur.fetchall()
+                for adv in new_advances:
+                    cur.execute("UPDATE advances SET status = 'Deducted', deduction_year = %s, deduction_month = %s WHERE id = %s", (year, month, adv["id"]))
+                
+                cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM advances WHERE employee_id = %s AND status = 'Deducted' AND deduction_year = %s AND deduction_month = %s", (eid, year, month))
+                salary_advance = float(cur.fetchone()["total"])
+                
+                # --- Loans Deduction ---
+                cur.execute("SELECT * FROM loans WHERE employee_id = %s AND status = 'Approved' AND remaining_amount > 0", (eid,))
+                active_loans = cur.fetchall()
+                for loan in active_loans:
+                    cur.execute("SELECT amount FROM loan_installments WHERE loan_id = %s AND year = %s AND month = %s", (loan["id"], year, month))
+                    if not cur.fetchone():
+                        deduct_amt = min(float(loan["monthly_installment"]), float(loan["remaining_amount"]))
+                        cur.execute("INSERT INTO loan_installments (loan_id, year, month, amount) VALUES (%s, %s, %s, %s)", (loan["id"], year, month, deduct_amt))
+                        new_rem = float(loan["remaining_amount"]) - deduct_amt
+                        new_rem_inst = int(loan["remaining_installments"]) - 1
+                        new_status = 'Completed' if new_rem <= 0 else 'Approved'
+                        cur.execute("UPDATE loans SET remaining_amount = %s, remaining_installments = %s, status = %s WHERE id = %s", (new_rem, new_rem_inst, new_status, loan["id"]))
+                
+                cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM loan_installments JOIN loans ON loan_installments.loan_id = loans.id WHERE loans.employee_id = %s AND year = %s AND month = %s", (eid, year, month))
+                loan_deduction = float(cur.fetchone()["total"])
+
+                total_deductions = epf_employee + no_pay_deduction + salary_advance + loan_deduction
                 net = gross - total_deductions
 
                 cur.execute("""
@@ -994,7 +1020,7 @@ def generate_payroll(year, month):
                         working_days, late_arrivals, early_departures, absences,
                         no_pay_days, annual_leave_taken, casual_leave_taken, medical_leave_taken,
                         status)
-                    VALUES (%s,%s,%s, %s,%s, %s,%s,%s, %s,%s,%s,%s, %s,%s,0,0, 0,%s, %s,%s,%s,
+                    VALUES (%s,%s,%s, %s,%s, %s,%s,%s, %s,%s,%s,%s, %s,%s,%s,%s, 0,%s, %s,%s,%s,
                             %s,%s,%s,%s, %s,%s,%s,%s, 'Draft')
                     ON CONFLICT (employee_id, year, month) DO UPDATE SET
                         basic_salary=EXCLUDED.basic_salary, total_allowances=EXCLUDED.total_allowances,
@@ -1003,6 +1029,7 @@ def generate_payroll(year, month):
                         ot_payment=EXCLUDED.ot_payment, bonus=EXCLUDED.bonus, incentive=EXCLUDED.incentive,
                         gross_salary=EXCLUDED.gross_salary,
                         epf_employee=EXCLUDED.epf_employee, no_pay_deduction=EXCLUDED.no_pay_deduction,
+                        salary_advance=EXCLUDED.salary_advance, loan_deduction=EXCLUDED.loan_deduction,
                         total_deductions=EXCLUDED.total_deductions,
                         epf_employer=EXCLUDED.epf_employer, etf_employer=EXCLUDED.etf_employer,
                         net_salary=EXCLUDED.net_salary,
@@ -1017,7 +1044,7 @@ def generate_payroll(year, month):
                 """, (eid, year, month, basic, total_allowances,
                       ot_weekday, ot_sunday, sun_triple_hours,
                       ot_payment, month_bonus, incentive, gross,
-                      epf_employee, no_pay_deduction, total_deductions,
+                      epf_employee, no_pay_deduction, salary_advance, loan_deduction, total_deductions,
                       epf_employer, etf_employer, net,
                       working_days, late_arrivals, early_departures, absences,
                       no_pay_days, annual_leave, casual_leave, medical_leave))
@@ -1337,5 +1364,126 @@ def approve_all(year, month):
         conn.close()
     return redirect(url_for("payroll_dashboard", year=year, month=month))
 
+
+@app.route("/advances-loans")
+@login_required
+@role_required("Admin", "HR")
+def advances_loans():
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT id, first_name, last_name, salary FROM employees WHERE employment_status = 'Active' ORDER BY first_name;")
+            employees = cur.fetchall()
+            
+            cur.execute("""
+                SELECT a.*, e.first_name, e.last_name 
+                FROM advances a JOIN employees e ON a.employee_id = e.id 
+                ORDER BY a.created_at DESC
+            """)
+            advances = cur.fetchall()
+            
+            cur.execute("""
+                SELECT l.*, e.first_name, e.last_name 
+                FROM loans l JOIN employees e ON l.employee_id = e.id 
+                ORDER BY l.created_at DESC
+            """)
+            loans = cur.fetchall()
+    finally:
+        conn.close()
+    return render_template("advances_loans.html", employees=employees, advances=advances, loans=loans)
+
+@app.route("/advances/new", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
+def create_advance():
+    employee_id = request.form.get("employee_id")
+    amount = float(request.form.get("amount") or 0)
+    reason = request.form.get("reason", "")
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT salary FROM employees WHERE id = %s", (employee_id,))
+            emp = cur.fetchone()
+            max_advance = float(emp["salary"]) * 0.40
+            if amount > max_advance:
+                flash(f"Advance amount exceeds 40% of salary ({max_advance:.2f}).", "error")
+                return redirect(url_for("advances_loans"))
+            
+            cur.execute(
+                "INSERT INTO advances (employee_id, amount, reason) VALUES (%s, %s, %s)",
+                (employee_id, amount, reason)
+            )
+        conn.commit()
+        flash("Advance request created.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("advances_loans"))
+
+@app.route("/advances/<int:id>/update", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
+def update_advance(id):
+    status = request.form.get("status")
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE advances SET status = %s WHERE id = %s", (status, id))
+        conn.commit()
+        flash(f"Advance {status.lower()}.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("advances_loans"))
+
+@app.route("/loans/new", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
+def create_loan():
+    employee_id = request.form.get("employee_id")
+    amount = float(request.form.get("amount") or 0)
+    installments = int(request.form.get("installments") or 1)
+    reason = request.form.get("reason", "")
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT salary FROM employees WHERE id = %s", (employee_id,))
+            emp = cur.fetchone()
+            max_loan = float(emp["salary"]) * 2
+            if amount > max_loan:
+                flash(f"Loan amount exceeds 2x salary ({max_loan:.2f}).", "error")
+                return redirect(url_for("advances_loans"))
+            if installments < 1 or installments > 12:
+                flash("Installments must be between 1 and 12.", "error")
+                return redirect(url_for("advances_loans"))
+            
+            monthly_installment = round(amount / installments, 2)
+            
+            cur.execute(
+                """INSERT INTO loans (employee_id, amount, installments, monthly_installment, remaining_amount, remaining_installments, reason)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (employee_id, amount, installments, monthly_installment, amount, installments, reason)
+            )
+        conn.commit()
+        flash("Loan request created.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("advances_loans"))
+
+@app.route("/loans/<int:id>/update", methods=["POST"])
+@login_required
+@role_required("Admin", "HR")
+def update_loan(id):
+    status = request.form.get("status")
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE loans SET status = %s WHERE id = %s", (status, id))
+        conn.commit()
+        flash(f"Loan {status.lower()}.", "success")
+    finally:
+        conn.close()
+    return redirect(url_for("advances_loans"))
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
