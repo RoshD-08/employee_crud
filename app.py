@@ -58,7 +58,7 @@ def load_logged_in_user():
         finally:
             conn.close()
 
-def login_required(f)
+def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if g.user is None:
