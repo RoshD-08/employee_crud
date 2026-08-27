@@ -52,7 +52,7 @@
 <body class="bg-paper text-ink font-body antialiased min-h-screen flex flex-col">
 
   <header class="bg-ink text-white roster-texture">
-    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-wrap gap-4 items-center justify-between">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-wrap gap-4 items-center justify-between">
       <a href="{{ url_for('list_employees') }}" class="flex items-center gap-3">
         <span class="font-mono text-xs tracking-widest border border-white/30 rounded px-2 py-1 text-accent-light/90">PAY&middot;SYS</span>
         <span class="font-display font-bold text-xl tracking-tight">Payroll System</span>
@@ -104,7 +104,7 @@
   </header>
 
   <main class="flex-1">
-    <div class="max-w-6xl mx-auto px-6 py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -125,7 +125,7 @@
   </main>
 
   <footer class="border-t border-line">
-    <div class="max-w-6xl mx-auto px-6 py-5 text-xs text-ink/50 font-mono">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-5 text-xs text-ink/50 font-mono">
       Payroll System &middot; internal records
     </div>
   </footer>
