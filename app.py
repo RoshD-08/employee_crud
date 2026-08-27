@@ -1251,7 +1251,7 @@ def download_profile_pdf(id):
         return redirect(url_for('list_employees'))
 
     from datetime import datetime
-    html = render_template("profile_pdf.html", employee=employee, now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    html = render_template("profile_pdf.html", employee=employee, now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), base_dir=app.root_path)
     
     pdf_buffer = BytesIO()
     pisa_status = pisa.CreatePDF(html, dest=pdf_buffer)
