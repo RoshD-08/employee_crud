@@ -94,7 +94,6 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS bank_account_number  VARCHAR(50);
 -- ── Tax & statutory ──
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS tax_id              VARCHAR(50);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS epf_number          VARCHAR(50);
-ALTER TABLE employees ADD COLUMN IF NOT EXISTS esi_number          VARCHAR(50);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS tax_filing_status   VARCHAR(30);
 
 -- ── Payroll: employee category & leave quotas ──
