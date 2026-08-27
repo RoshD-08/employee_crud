@@ -59,13 +59,7 @@
       </a>
       <div class="flex items-center gap-3">
         {% if g.user %}
-          <div class="mr-4 flex items-center gap-2 border-r border-white/20 pr-4">
-            <div class="text-right">
-              <div class="text-sm font-semibold text-white leading-tight">{{ g.user.username }}</div>
-              <div class="text-[10px] uppercase tracking-wider text-accent-light opacity-80">{{ g.user.role }}</div>
-            </div>
-            <a href="{{ url_for('logout') }}" class="ml-2 text-xs text-white/50 hover:text-white transition-colors">Logout</a>
-          </div>
+          
           
           <a href="{{ url_for('payroll_dashboard') }}"
              class="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-md">
@@ -98,6 +92,15 @@
               <span class="text-lg leading-none">+</span> New
             </a>
           {% endif %}
+          <div class="ml-4 pl-4 flex items-center gap-4 border-l border-white/20">
+            <div class="text-right hidden sm:block">
+              <div class="text-sm font-semibold text-white leading-tight">{{ g.user.username }}</div>
+              <div class="text-[10px] uppercase tracking-wider text-accent-light opacity-80">{{ g.user.role }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="inline-flex items-center bg-rust hover:bg-[#9E3924] transition-colors text-white text-sm font-bold px-6 py-2.5 rounded-md shadow-sm border border-[#7A2A1A]">
+              Logout
+            </a>
+          </div>
         {% endif %}
       </div>
     </div>
