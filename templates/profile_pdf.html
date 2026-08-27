@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Profile - {{ employee.first_name }} {{ employee.last_name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1cm 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #14181F;
+            line-height: 1.5;
+        }
+        .header {
+            border-bottom: 2px solid #2F6F63;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+        }
+        .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #2F6F63;
+        }
+        .document-title {
+            font-size: 14pt;
+            color: #4b5563;
+            margin-top: 5px;
+        }
+        h2 {
+            font-size: 12pt;
+            color: #2F6F63;
+            border-bottom: 1px solid #E2E5EA;
+            padding-bottom: 4px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            padding: 8px 5px;
+            border-bottom: 1px dashed #E2E5EA;
+            vertical-align: top;
+        }
+        .label {
+            font-weight: bold;
+            color: #4b5563;
+            width: 25%;
+            font-size: 9pt;
+        }
+        .val {
+            width: 25%;
+            color: #14181F;
+        }
+        .photo-cell {
+            text-align: right;
+            vertical-align: top;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 8pt;
+            color: #6b7280;
+            border-top: 1px solid #E2E5EA;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <table style="width: 100%; border-bottom: 2px solid #2F6F63; padding-bottom: 10px; margin-bottom: 20px;">
+        <tr>
+            <td style="width: 70%; vertical-align: bottom;">
+                <div class="company-name">ACME Construction Co.</div>
+                <div class="document-title">Employee Profile Report</div>
+            </td>
+            <td style="width: 30%; text-align: right; vertical-align: bottom;">
+                <div style="font-size: 9pt; color: #4b5563;">
+                    <strong>Generated on:</strong> <br>
+                    {{ now if now else "---" }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table style="width: 100%; margin-bottom: 10px;">
+        <tr>
+            <td style="width: 70%;">
+                <h1 style="font-size: 16pt; margin: 0; padding: 0; color: #14181F;">{{ employee.first_name }} {{ employee.last_name }}</h1>
+                <div style="font-size: 11pt; color: #4b5563; margin-top: 5px;">{{ employee.position }} — {{ employee.department }}</div>
+                <div style="font-size: 10pt; color: #2F6F63; margin-top: 5px; font-weight: bold;">EMP-{{ "%04d"|format(employee.id) }}</div>
+            </td>
+            <td style="width: 30%; text-align: right;" class="photo-cell">
+                <!-- xhtml2pdf doesn't always handle remote URLs perfectly, we will skip the photo or use a placeholder -->
+                <div style="width: 80px; height: 80px; background-color: #F7F8FA; border: 1px solid #E2E5EA; display: inline-block; text-align: center; line-height: 80px; color: #9ca3af; font-size: 8pt;">
+                    Photo
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <h2>Personal Information</h2>
+    <table class="info-table">
+        <tr>
+            <td class="label">First Name</td>
+            <td class="val">{{ employee.first_name }}</td>
+            <td class="label">Last Name</td>
+            <td class="val">{{ employee.last_name }}</td>
+        </tr>
+        <tr>
+            <td class="label">Email</td>
+            <td class="val">{{ employee.email or '—' }}</td>
+            <td class="label">Phone</td>
+            <td class="val">{{ employee.phone or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Date of Birth</td>
+            <td class="val">{{ employee.date_of_birth or '—' }}</td>
+            <td class="label">Gender</td>
+            <td class="val">{{ employee.gender or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">National ID</td>
+            <td class="val">{{ employee.national_id or '—' }}</td>
+            <td class="label">Social Status</td>
+            <td class="val">{{ employee.tax_filing_status or '—' }}</td>
+        </tr>
+    </table>
+
+    <h2>Employment Details</h2>
+    <table class="info-table">
+        <tr>
+            <td class="label">Employee Category</td>
+            <td class="val">{{ employee.employee_category or '—' }}</td>
+            <td class="label">Employment Type</td>
+            <td class="val">{{ employee.employment_type or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Hire Date</td>
+            <td class="val">{{ employee.hire_date or '—' }}</td>
+            <td class="label">Status</td>
+            <td class="val">{{ employee.employment_status or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Department</td>
+            <td class="val">{{ employee.department or '—' }}</td>
+            <td class="label">Position</td>
+            <td class="val">{{ employee.position or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Work Location</td>
+            <td colspan="3" class="val">{{ employee.work_location or '—' }}</td>
+        </tr>
+    </table>
+
+    <h2>Financial & Statutory</h2>
+    <table class="info-table">
+        <tr>
+            <td class="label">Basic Salary</td>
+            <td class="val">LKR {{ "{:,.2f}".format(employee.basic_salary) if employee.basic_salary else '—' }}</td>
+            <td class="label">Payment Method</td>
+            <td class="val">{{ employee.payment_method or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Bank Name</td>
+            <td class="val">{{ employee.bank_name or '—' }}</td>
+            <td class="label">Bank Branch</td>
+            <td class="val">{{ employee.bank_branch or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Account Number</td>
+            <td class="val">{{ employee.bank_account_number or '—' }}</td>
+            <td class="label">Tax ID (TIN)</td>
+            <td class="val">{{ employee.tax_id or '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">EPF Number</td>
+            <td class="val">{{ employee.epf_number or '—' }}</td>
+            <td class="label"></td>
+            <td class="val"></td>
+        </tr>
+    </table>
+    
+    {% if employee.address %}
+    <h2>Address</h2>
+    <table class="info-table">
+        <tr>
+            <td class="label" style="width: 25%;">Full Address</td>
+            <td class="val" style="width: 75%;">{{ employee.address }}</td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <div class="footer">
+        This document contains confidential employee information. Generated automatically by the Employee Management System.
+    </div>
+
+</body>
+</html>
