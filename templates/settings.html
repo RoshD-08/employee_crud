@@ -32,32 +32,72 @@
             
             <h2 class="text-lg font-bold text-[#14181F] mb-4 border-b border-[#E2E5EA] pb-2">Dropdown Lists & Categories</h2>
             
-            <div class="space-y-6 mb-8">
-                <div>
-                    <label for="departments" class="block text-sm font-semibold text-ink mb-1.5">Departments</label>
-                    <textarea id="departments" name="departments" rows="2" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">{{ ', '.join(departments) }}</textarea>
-                    <p class="mt-1.5 text-xs text-[#14181F]/70">Comma separated values (e.g., HR, IT, Sales)</p>
+            <div class="space-y-5 mb-8">
+
+                <div class="bg-paper/50 rounded-lg p-4 border border-line">
+                    <label class="block text-sm font-semibold text-ink mb-3">Departments</label>
+                    <input type="hidden" id="hidden_departments" name="departments" value="{{ ', '.join(departments) }}">
+                    
+                    <ul id="ul_departments" class="space-y-2 mb-3"></ul>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="add_departments" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('departments'); }">
+                        <button type="button" onclick="addItem('departments')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                    </div>
                 </div>
-                
-                <div>
-                    <label for="employment_types" class="block text-sm font-semibold text-ink mb-1.5">Employment Types</label>
-                    <input type="text" id="employment_types" name="employment_types" value="{{ ', '.join(employment_types) }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+
+
+                <div class="bg-paper/50 rounded-lg p-4 border border-line">
+                    <label class="block text-sm font-semibold text-ink mb-3">Employment Types</label>
+                    <input type="hidden" id="hidden_employment_types" name="employment_types" value="{{ ', '.join(employment_types) }}">
+                    
+                    <ul id="ul_employment_types" class="space-y-2 mb-3"></ul>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="add_employment_types" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_types'); }">
+                        <button type="button" onclick="addItem('employment_types')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                    </div>
                 </div>
-                
-                <div>
-                    <label for="employment_statuses" class="block text-sm font-semibold text-ink mb-1.5">Employment Statuses</label>
-                    <input type="text" id="employment_statuses" name="employment_statuses" value="{{ ', '.join(employment_statuses) }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+
+
+                <div class="bg-paper/50 rounded-lg p-4 border border-line">
+                    <label class="block text-sm font-semibold text-ink mb-3">Employment Statuses</label>
+                    <input type="hidden" id="hidden_employment_statuses" name="employment_statuses" value="{{ ', '.join(employment_statuses) }}">
+                    
+                    <ul id="ul_employment_statuses" class="space-y-2 mb-3"></ul>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="add_employment_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_statuses'); }">
+                        <button type="button" onclick="addItem('employment_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                    </div>
                 </div>
-                
-                <div>
-                    <label for="social_statuses" class="block text-sm font-semibold text-ink mb-1.5">Social Statuses</label>
-                    <input type="text" id="social_statuses" name="social_statuses" value="{{ ', '.join(tax_filing_statuses) }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+
+
+                <div class="bg-paper/50 rounded-lg p-4 border border-line">
+                    <label class="block text-sm font-semibold text-ink mb-3">Social Statuses</label>
+                    <input type="hidden" id="hidden_social_statuses" name="social_statuses" value="{{ ', '.join(tax_filing_statuses) }}">
+                    
+                    <ul id="ul_social_statuses" class="space-y-2 mb-3"></ul>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="add_social_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('social_statuses'); }">
+                        <button type="button" onclick="addItem('social_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                    </div>
                 </div>
-                
-                <div>
-                    <label for="genders" class="block text-sm font-semibold text-ink mb-1.5">Genders</label>
-                    <input type="text" id="genders" name="genders" value="{{ ', '.join(genders) }}" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+
+
+                <div class="bg-paper/50 rounded-lg p-4 border border-line">
+                    <label class="block text-sm font-semibold text-ink mb-3">Genders</label>
+                    <input type="hidden" id="hidden_genders" name="genders" value="{{ ', '.join(genders) }}">
+                    
+                    <ul id="ul_genders" class="space-y-2 mb-3"></ul>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="add_genders" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('genders'); }">
+                        <button type="button" onclick="addItem('genders')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                    </div>
                 </div>
+
             </div>
 
             <h2 class="text-lg font-bold text-[#14181F] mb-4 border-b border-[#E2E5EA] pb-2">Bonus & Incentives</h2>
@@ -120,6 +160,105 @@
         }
         updateToggleState();
     });
+
+    // List editor logic
+    const lists = ['departments', 'employment_types', 'employment_statuses', 'social_statuses', 'genders'];
+
+    function renderList(listName) {
+        const hiddenInput = document.getElementById('hidden_' + listName);
+        const ul = document.getElementById('ul_' + listName);
+        ul.innerHTML = '';
+
+        let items = hiddenInput.value.split(',').map(i => i.trim()).filter(i => i);
+        
+        if (items.length === 0) {
+            ul.innerHTML = '<li class="text-xs text-ink/50 italic py-1">No items added.</li>';
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center bg-white border border-line px-3 py-1.5 rounded-md shadow-sm text-sm';
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = item;
+            textSpan.className = 'font-medium text-ink';
+            
+            const btnDiv = document.createElement('div');
+            btnDiv.className = 'flex items-center gap-3 border-l border-line pl-3 ml-3';
+            
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.innerHTML = 'Edit';
+            editBtn.className = 'text-accent hover:text-accent-dark text-xs font-semibold';
+            editBtn.onclick = () => editItem(listName, index);
+            
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.innerHTML = 'Delete';
+            delBtn.className = 'text-rust hover:text-[#913623] text-xs font-semibold';
+            delBtn.onclick = () => deleteItem(listName, index);
+            
+            btnDiv.appendChild(editBtn);
+            btnDiv.appendChild(delBtn);
+            
+            li.appendChild(textSpan);
+            li.appendChild(btnDiv);
+            ul.appendChild(li);
+        });
+    }
+
+    function addItem(listName) {
+        const addInput = document.getElementById('add_' + listName);
+        const hiddenInput = document.getElementById('hidden_' + listName);
+        const val = addInput.value.trim();
+        
+        if (val) {
+            let items = hiddenInput.value.split(',').map(i => i.trim()).filter(i => i);
+            if (!items.includes(val)) {
+                items.push(val);
+                hiddenInput.value = items.join(', ');
+                addInput.value = '';
+                renderList(listName);
+            } else {
+                alert("Item already exists!");
+            }
+        }
+    }
+
+    function editItem(listName, index) {
+        const hiddenInput = document.getElementById('hidden_' + listName);
+        let items = hiddenInput.value.split(',').map(i => i.trim()).filter(i => i);
+        
+        const newVal = prompt("Edit item:", items[index]);
+        if (newVal !== null && newVal.trim() !== '') {
+            const trimmed = newVal.trim();
+            if (trimmed !== items[index] && items.includes(trimmed)) {
+                alert("This item already exists!");
+                return;
+            }
+            items[index] = trimmed;
+            hiddenInput.value = items.join(', ');
+            renderList(listName);
+        }
+    }
+
+    function deleteItem(listName, index) {
+        const hiddenInput = document.getElementById('hidden_' + listName);
+        let items = hiddenInput.value.split(',').map(i => i.trim()).filter(i => i);
+        
+        if (confirm('Are you sure you want to delete "' + items[index] + '"?')) {
+            items.splice(index, 1);
+            hiddenInput.value = items.join(', ');
+            renderList(listName);
+        }
+    }
+
+    // Initialize lists
+    document.addEventListener('DOMContentLoaded', () => {
+        lists.forEach(renderList);
+    });
+
 </script>
 {% endblock %}
 
