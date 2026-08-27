@@ -199,18 +199,18 @@
         <h3 class="text-sm font-display font-semibold text-ink/70 uppercase tracking-wide mb-4">Tax & Statutory</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-semibold text-ink mb-1.5" for="tax_id">Tax ID (TIN/PAN)</label>
-            <input type="text" id="tax_id" name="tax_id" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.tax_id or '' }}">
+            <label class="block text-sm font-semibold text-ink mb-1.5" for="tax_id">Tax ID (TIN/PAN) <span class="text-rust">*</span></label>
+            <input type="text" id="tax_id" name="tax_id" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.tax_id or '' }}" required>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-ink mb-1.5" for="epf_number">EPF Number</label>
-            <input type="text" id="epf_number" name="epf_number" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.epf_number or '' }}">
+            <label class="block text-sm font-semibold text-ink mb-1.5" for="epf_number">EPF Number <span class="text-rust">*</span></label>
+            <input type="text" id="epf_number" name="epf_number" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.epf_number or '' }}" required>
           </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-ink mb-1.5" for="esi_number">ESI Number</label>
-            <input type="text" id="esi_number" name="esi_number" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.esi_number or '' }}">
+            <label class="block text-sm font-semibold text-ink mb-1.5" for="esi_number">ESI Number <span class="text-rust">*</span></label>
+            <input type="text" id="esi_number" name="esi_number" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" value="{{ employee.esi_number or '' }}" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-ink mb-1.5" for="tax_filing_status">Tax Filing Status</label>
