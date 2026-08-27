@@ -32,71 +32,106 @@
             
             <h2 class="text-lg font-bold text-[#14181F] mb-4 border-b border-[#E2E5EA] pb-2">Dropdown Lists & Categories</h2>
             
-            <div class="space-y-5 mb-8">
+            <div class="space-y-3 mb-8">
 
-                <div class="bg-paper/50 rounded-lg p-4 border border-line">
-                    <label class="block text-sm font-semibold text-ink mb-3">Departments</label>
-                    <input type="hidden" id="hidden_departments" name="departments" value="{{ ', '.join(departments) }}">
-                    
-                    <ul id="ul_departments" class="space-y-2 mb-3"></ul>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="add_departments" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('departments'); }">
-                        <button type="button" onclick="addItem('departments')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                <details class="bg-paper/50 rounded-lg border border-line group">
+                    <summary class="cursor-pointer font-semibold text-ink px-4 py-3 flex justify-between items-center select-none outline-none">
+                        Departments
+                        <span class="transition-transform duration-200 group-open:rotate-180">
+                            <svg class="w-5 h-5 text-ink/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="px-4 pb-4 border-t border-line/50 mt-1 pt-4">
+                        <input type="hidden" id="hidden_departments" name="departments" value="{{ ', '.join(departments) }}">
+                        
+                        <ul id="ul_departments" class="space-y-2 mb-3"></ul>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="add_departments" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('departments'); }">
+                            <button type="button" onclick="addItem('departments')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                        </div>
                     </div>
-                </div>
+                </details>
 
 
-                <div class="bg-paper/50 rounded-lg p-4 border border-line">
-                    <label class="block text-sm font-semibold text-ink mb-3">Employment Types</label>
-                    <input type="hidden" id="hidden_employment_types" name="employment_types" value="{{ ', '.join(employment_types) }}">
-                    
-                    <ul id="ul_employment_types" class="space-y-2 mb-3"></ul>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="add_employment_types" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_types'); }">
-                        <button type="button" onclick="addItem('employment_types')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                <details class="bg-paper/50 rounded-lg border border-line group">
+                    <summary class="cursor-pointer font-semibold text-ink px-4 py-3 flex justify-between items-center select-none outline-none">
+                        Employment Types
+                        <span class="transition-transform duration-200 group-open:rotate-180">
+                            <svg class="w-5 h-5 text-ink/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="px-4 pb-4 border-t border-line/50 mt-1 pt-4">
+                        <input type="hidden" id="hidden_employment_types" name="employment_types" value="{{ ', '.join(employment_types) }}">
+                        
+                        <ul id="ul_employment_types" class="space-y-2 mb-3"></ul>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="add_employment_types" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_types'); }">
+                            <button type="button" onclick="addItem('employment_types')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                        </div>
                     </div>
-                </div>
+                </details>
 
 
-                <div class="bg-paper/50 rounded-lg p-4 border border-line">
-                    <label class="block text-sm font-semibold text-ink mb-3">Employment Statuses</label>
-                    <input type="hidden" id="hidden_employment_statuses" name="employment_statuses" value="{{ ', '.join(employment_statuses) }}">
-                    
-                    <ul id="ul_employment_statuses" class="space-y-2 mb-3"></ul>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="add_employment_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_statuses'); }">
-                        <button type="button" onclick="addItem('employment_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                <details class="bg-paper/50 rounded-lg border border-line group">
+                    <summary class="cursor-pointer font-semibold text-ink px-4 py-3 flex justify-between items-center select-none outline-none">
+                        Employment Statuses
+                        <span class="transition-transform duration-200 group-open:rotate-180">
+                            <svg class="w-5 h-5 text-ink/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="px-4 pb-4 border-t border-line/50 mt-1 pt-4">
+                        <input type="hidden" id="hidden_employment_statuses" name="employment_statuses" value="{{ ', '.join(employment_statuses) }}">
+                        
+                        <ul id="ul_employment_statuses" class="space-y-2 mb-3"></ul>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="add_employment_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('employment_statuses'); }">
+                            <button type="button" onclick="addItem('employment_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                        </div>
                     </div>
-                </div>
+                </details>
 
 
-                <div class="bg-paper/50 rounded-lg p-4 border border-line">
-                    <label class="block text-sm font-semibold text-ink mb-3">Social Statuses</label>
-                    <input type="hidden" id="hidden_social_statuses" name="social_statuses" value="{{ ', '.join(tax_filing_statuses) }}">
-                    
-                    <ul id="ul_social_statuses" class="space-y-2 mb-3"></ul>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="add_social_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('social_statuses'); }">
-                        <button type="button" onclick="addItem('social_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                <details class="bg-paper/50 rounded-lg border border-line group">
+                    <summary class="cursor-pointer font-semibold text-ink px-4 py-3 flex justify-between items-center select-none outline-none">
+                        Social Statuses
+                        <span class="transition-transform duration-200 group-open:rotate-180">
+                            <svg class="w-5 h-5 text-ink/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="px-4 pb-4 border-t border-line/50 mt-1 pt-4">
+                        <input type="hidden" id="hidden_social_statuses" name="social_statuses" value="{{ ', '.join(tax_filing_statuses) }}">
+                        
+                        <ul id="ul_social_statuses" class="space-y-2 mb-3"></ul>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="add_social_statuses" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('social_statuses'); }">
+                            <button type="button" onclick="addItem('social_statuses')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                        </div>
                     </div>
-                </div>
+                </details>
 
 
-                <div class="bg-paper/50 rounded-lg p-4 border border-line">
-                    <label class="block text-sm font-semibold text-ink mb-3">Genders</label>
-                    <input type="hidden" id="hidden_genders" name="genders" value="{{ ', '.join(genders) }}">
-                    
-                    <ul id="ul_genders" class="space-y-2 mb-3"></ul>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="add_genders" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('genders'); }">
-                        <button type="button" onclick="addItem('genders')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                <details class="bg-paper/50 rounded-lg border border-line group">
+                    <summary class="cursor-pointer font-semibold text-ink px-4 py-3 flex justify-between items-center select-none outline-none">
+                        Genders
+                        <span class="transition-transform duration-200 group-open:rotate-180">
+                            <svg class="w-5 h-5 text-ink/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="px-4 pb-4 border-t border-line/50 mt-1 pt-4">
+                        <input type="hidden" id="hidden_genders" name="genders" value="{{ ', '.join(genders) }}">
+                        
+                        <ul id="ul_genders" class="space-y-2 mb-3"></ul>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="add_genders" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent bg-white" placeholder="Type new item..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); addItem('genders'); }">
+                            <button type="button" onclick="addItem('genders')" class="bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-1.5 rounded-md transition-colors shadow-sm">Add</button>
+                        </div>
                     </div>
-                </div>
+                </details>
 
             </div>
 
