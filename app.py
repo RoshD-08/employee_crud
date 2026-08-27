@@ -41,7 +41,7 @@ from werkzeug.utils import secure_filename
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, g
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, g, send_file
 
 from config import Config
 
@@ -1239,8 +1239,35 @@ def company_settings():
 # PDF PAYSLIP GENERATION
 # ═══════════════════════════════════════════
 
+@app.route("/employees/<int:id>/pdf")
+@login_required
+def download_profile_pdf(id):
+    from io import BytesIO
+    from xhtml2pdf import pisa
+
+    employee = fetch_employee_or_none(id)
+    if not employee:
+        flash("Employee not found.", "error")
+        return redirect(url_for('list_employees'))
+
+    from datetime import datetime
+    html = render_template("profile_pdf.html", employee=employee, now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    
+    pdf_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=pdf_buffer)
+    
+    if pisa_status.err:
+        flash("Error generating PDF.", "error")
+        return redirect(url_for('view_employee', id=id))
+        
+    pdf_buffer.seek(0)
+    filename = f"Employee_Profile_{employee['first_name']}_{employee['last_name']}.pdf"
+    
+    return send_file(pdf_buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
+
 @app.route("/payroll/<int:year>/<int:month>/<int:employee_id>/pdf")
 @login_required
+@role_required("Admin", "HR")
 def download_payslip_pdf(year, month, employee_id):
     """Generate and download a professional PDF payslip."""
     from io import BytesIO
