@@ -40,6 +40,7 @@
   </script>
 
   
+  
   <style>
     /* Subtle stamped-grid texture behind the header — a quiet nod to a paper roster/ledger */
     .roster-texture {
@@ -59,7 +60,15 @@
     html.dark-theme .leaflet-container {
       filter: invert(1) hue-rotate(180deg);
     }
+    
+    details > summary {
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker {
+      display: none;
+    }
   </style>
+
 
   <script>
     // Check local storage for dark mode preference
