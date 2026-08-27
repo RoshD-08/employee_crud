@@ -33,8 +33,11 @@ import calendar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+import os
+import uuid
 import psycopg2
 import psycopg2.extras
+from werkzeug.utils import secure_filename
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -44,6 +47,8 @@ from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = 'static/uploads/photos'
 
 # ── Authentication ──
 @app.before_request
@@ -299,6 +304,7 @@ _INSERT_COLS = [
     "payment_method", "bank_name", "bank_branch", "bank_account_number",
     "tax_id", "epf_number", "esi_number", "tax_filing_status",
     "address", "latitude", "longitude",
+    "photo",
 ]
 
 _INSERT_SQL = f"""
@@ -308,6 +314,19 @@ _INSERT_SQL = f"""
 _UPDATE_SETS = ', '.join(f"{col} = %s" for col in _INSERT_COLS)
 _UPDATE_SQL = f"UPDATE employees SET {_UPDATE_SETS} WHERE id = %s;"
 
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'jpg', 'jpeg', 'png'}
+
+def handle_photo_upload(file):
+    if file and file.filename != '' and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
+        return unique_filename
+    return None
 
 # ═══════════════════════════════════════════
 # EMPLOYEE CRUD ROUTES
@@ -357,30 +376,42 @@ def add_employee():
             else:
                 lat, lon = geocode_address(data["address"])
             data["latitude"], data["longitude"] = lat, lon
-            conn = get_db_connection()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute(_INSERT_SQL, tuple(data[c] for c in _INSERT_COLS))
-                conn.commit()
-                flash(f"{data['first_name']} {data['last_name']} was added.", "success")
-                if lat is None and data["address"]:
-                    flash("Couldn't locate that address on the map.", "error")
-                return redirect(url_for("list_employees"))
-            except psycopg2.errors.UniqueViolation as e:
-                conn.rollback()
-                err_msg = str(e)
-                if "email" in err_msg:
-                    errors.append("An employee with that email already exists.")
-                elif "tax_id" in err_msg:
-                    errors.append("An employee with that Tax ID already exists.")
-                elif "epf_number" in err_msg:
-                    errors.append("An employee with that EPF Number already exists.")
-                elif "esi_number" in err_msg:
-                    errors.append("An employee with that ESI Number already exists.")
-                else:
-                    errors.append("A unique constraint violation occurred.")
-            finally:
-                conn.close()
+            
+            photo_filename = None
+            if 'photo' in request.files:
+                file = request.files['photo']
+                if file and file.filename != '':
+                    if allowed_file(file.filename):
+                        photo_filename = handle_photo_upload(file)
+                    else:
+                        errors.append("Invalid photo format. Only JPG, JPEG, and PNG are allowed.")
+            
+            if not errors:
+                data["photo"] = photo_filename
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute(_INSERT_SQL, tuple(data[c] for c in _INSERT_COLS))
+                    conn.commit()
+                    flash(f"{data['first_name']} {data['last_name']} was added.", "success")
+                    if lat is None and data["address"]:
+                        flash("Couldn't locate that address on the map.", "error")
+                    return redirect(url_for("list_employees"))
+                except psycopg2.errors.UniqueViolation as e:
+                    conn.rollback()
+                    err_msg = str(e)
+                    if "email" in err_msg:
+                        errors.append("An employee with that email already exists.")
+                    elif "tax_id" in err_msg:
+                        errors.append("An employee with that Tax ID already exists.")
+                    elif "epf_number" in err_msg:
+                        errors.append("An employee with that EPF Number already exists.")
+                    elif "esi_number" in err_msg:
+                        errors.append("An employee with that ESI Number already exists.")
+                    else:
+                        errors.append("A unique constraint violation occurred.")
+                finally:
+                    conn.close()
         for e in errors: flash(e, "error")
         return render_template("add_employee.html", employee=data, **_form_constants()), 400
     return render_template("add_employee.html", employee={}, **_form_constants())
@@ -405,28 +436,42 @@ def edit_employee(employee_id):
             else:
                 lat, lon = existing["latitude"], existing["longitude"]
             data["latitude"], data["longitude"] = lat, lon
-            conn = get_db_connection()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute(_UPDATE_SQL, tuple(data[c] for c in _INSERT_COLS) + (employee_id,))
-                conn.commit()
-                flash(f"{data['first_name']} {data['last_name']} was updated.", "success")
-                return redirect(url_for("list_employees"))
-            except psycopg2.errors.UniqueViolation as e:
-                conn.rollback()
-                err_msg = str(e)
-                if "email" in err_msg:
-                    errors.append("An employee with that email already exists.")
-                elif "tax_id" in err_msg:
-                    errors.append("An employee with that Tax ID already exists.")
-                elif "epf_number" in err_msg:
-                    errors.append("An employee with that EPF Number already exists.")
-                elif "esi_number" in err_msg:
-                    errors.append("An employee with that ESI Number already exists.")
-                else:
-                    errors.append("A unique constraint violation occurred.")
-            finally:
-                conn.close()
+            
+            photo_filename = existing.get("photo")
+            if 'photo' in request.files:
+                file = request.files['photo']
+                if file and file.filename != '':
+                    if allowed_file(file.filename):
+                        new_photo = handle_photo_upload(file)
+                        if new_photo:
+                            photo_filename = new_photo
+                    else:
+                        errors.append("Invalid photo format. Only JPG, JPEG, and PNG are allowed.")
+
+            if not errors:
+                data["photo"] = photo_filename
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute(_UPDATE_SQL, tuple(data[c] for c in _INSERT_COLS) + (employee_id,))
+                    conn.commit()
+                    flash(f"{data['first_name']} {data['last_name']} was updated.", "success")
+                    return redirect(url_for("list_employees"))
+                except psycopg2.errors.UniqueViolation as e:
+                    conn.rollback()
+                    err_msg = str(e)
+                    if "email" in err_msg:
+                        errors.append("An employee with that email already exists.")
+                    elif "tax_id" in err_msg:
+                        errors.append("An employee with that Tax ID already exists.")
+                    elif "epf_number" in err_msg:
+                        errors.append("An employee with that EPF Number already exists.")
+                    elif "esi_number" in err_msg:
+                        errors.append("An employee with that ESI Number already exists.")
+                    else:
+                        errors.append("A unique constraint violation occurred.")
+                finally:
+                    conn.close()
         for e in errors: flash(e, "error")
         data["id"] = employee_id
         return render_template("edit_employee.html", employee=data, **_form_constants()), 400

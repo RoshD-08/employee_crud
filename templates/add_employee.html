@@ -8,7 +8,7 @@
   </div>
 
   <div class="bg-white rounded-lg shadow-sm border border-line p-6">
-    <form method="POST" action="{{ url_for('add_employee') }}">
+    <form method="POST" action="{{ url_for('add_employee') }}" enctype="multipart/form-data">
       
       <!-- 1. Personal Information -->
       <div>
@@ -43,6 +43,12 @@
               {% endfor %}
             </select>
           </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm font-semibold text-ink mb-1.5" for="photo">Profile Photo</label>
+          <div class="text-xs text-ink/70 mb-2">Square format recommended (200x200 up to 400x400 px), Max 5 MB, Solid neutral background. Allowed: JPG, JPEG, PNG.</div>
+          <input type="file" id="photo" name="photo" accept=".jpg, .jpeg, .png" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
         </div>
         <div class="mt-4">
           <label class="block text-sm font-semibold text-ink mb-1.5" for="national_id">National ID / NIC</label>
