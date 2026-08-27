@@ -46,6 +46,21 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from config import Config
 
 app = Flask(__name__)
+
+@app.context_processor
+def inject_globals():
+    return {
+        "departments": get_list_setting("departments", ["HR", "IT", "Sales", "Operations", "Finance", "Management", "Marketing", "Support"]),
+        "employment_types": get_list_setting("employment_types", ["Full-time", "Part-time", "Contract", "Intern"]),
+        "employment_statuses": get_list_setting("employment_statuses", ["Active", "On Leave", "Suspended", "Terminated", "Resigned"]),
+        "tax_filing_statuses": get_list_setting("social_statuses", ["Single", "Married", "Other"]),
+        "genders": get_list_setting("genders", ["Male", "Female", "Other", "Prefer not to say"]),
+        "employee_categories": ["Employee", "Labourer"],
+        "payment_methods": ["Bank Transfer", "Cash", "Cheque"],
+        "attendance_statuses": ["Present", "Absent", "Half-day", "No-pay", "Leave"],
+        "leave_types": ["Annual", "Casual", "Medical"]
+    }
+
 app.config.from_object(Config)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = 'static/uploads/photos'
@@ -110,20 +125,6 @@ def logout():
 
 # ── Constants ──
 
-DEPARTMENTS = [
-    "Engineering", "Sales", "Marketing", "Human Resources",
-    "Finance", "Operations", "Customer Support",
-]
-
-EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Intern"]
-EMPLOYMENT_STATUSES = ["Active", "On Leave", "Suspended", "Terminated", "Resigned"]
-PAYMENT_METHODS = ["Bank Transfer", "Cash", "Cheque"]
-TAX_FILING_STATUSES = ["Single", "Married", "Other"]
-GENDERS = ["Male", "Female", "Other", "Prefer not to say"]
-EMPLOYEE_CATEGORIES = ["Employee", "Labourer"]
-
-ATTENDANCE_STATUSES = ["Present", "Absent", "Half-day", "No-pay", "Leave"]
-LEAVE_TYPES = ["Annual", "Casual", "Medical"]
 
 # ── DB helpers ──
 
@@ -141,17 +142,6 @@ def fetch_employee_or_none(employee_id):
         conn.close()
 
 
-def _form_constants():
-    return {
-        "departments": DEPARTMENTS,
-        "employment_types": EMPLOYMENT_TYPES,
-        "employment_statuses": EMPLOYMENT_STATUSES,
-        "payment_methods": PAYMENT_METHODS,
-        "tax_filing_statuses": TAX_FILING_STATUSES,
-        "genders": GENDERS,
-        "employee_categories": EMPLOYEE_CATEGORIES,
-    }
-
 
 def get_company_setting(key, default="0"):
     conn = get_db_connection()
@@ -163,6 +153,11 @@ def get_company_setting(key, default="0"):
     finally:
         conn.close()
 
+def get_list_setting(key, default_list):
+    val = get_company_setting(key, None)
+    if not val:
+        return default_list
+    return [x.strip() for x in val.split(',') if x.strip()]
 
 # ── Validation ──
 
@@ -360,8 +355,7 @@ def list_employees():
         conn.close()
 
     return render_template("index.html", employees=employees, search=search,
-                           selected_department=department, selected_status=status,
-                           departments=DEPARTMENTS, employment_statuses=EMPLOYMENT_STATUSES)
+                           selected_department=department, selected_status=status)
 
 
 @app.route("/employees/new", methods=["GET", "POST"])
@@ -425,8 +419,8 @@ def add_employee():
                 finally:
                     conn.close()
         for e in errors: flash(e, "error")
-        return render_template("add_employee.html", employee=data, **_form_constants()), 400
-    return render_template("add_employee.html", employee={}, **_form_constants())
+        return render_template("add_employee.html", employee=data), 400
+    return render_template("add_employee.html", employee={})
 
 
 @app.route("/employees/<int:employee_id>/edit", methods=["GET", "POST"])
@@ -497,8 +491,8 @@ def edit_employee(employee_id):
                     conn.close()
         for e in errors: flash(e, "error")
         data["id"] = employee_id
-        return render_template("edit_employee.html", employee=data, **_form_constants()), 400
-    return render_template("edit_employee.html", employee=existing, **_form_constants())
+        return render_template("edit_employee.html", employee=data), 400
+    return render_template("edit_employee.html", employee=existing)
 
 
 @app.route("/employees/<int:employee_id>/delete", methods=["POST"])
@@ -1205,21 +1199,31 @@ def company_settings():
     if request.method == "POST":
         bonus = request.form.get("annual_bonus", "0").strip()
         incentive = request.form.get("monthly_incentive", "0").strip()
+        
+        departments = request.form.get("departments", "").strip()
+        employment_types = request.form.get("employment_types", "").strip()
+        employment_statuses = request.form.get("employment_statuses", "").strip()
+        social_statuses = request.form.get("social_statuses", "").strip()
+        genders = request.form.get("genders", "").strip()
+        
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO company_settings (setting_key, setting_value)
-                    VALUES ('annual_bonus', %s)
-                    ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value,
-                        updated_at = CURRENT_TIMESTAMP;
-                """, (bonus,))
-                cur.execute("""
-                    INSERT INTO company_settings (setting_key, setting_value)
-                    VALUES ('monthly_incentive', %s)
-                    ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value,
-                        updated_at = CURRENT_TIMESTAMP;
-                """, (incentive,))
+                for key, val in [
+                    ('annual_bonus', bonus),
+                    ('monthly_incentive', incentive),
+                    ('departments', departments),
+                    ('employment_types', employment_types),
+                    ('employment_statuses', employment_statuses),
+                    ('social_statuses', social_statuses),
+                    ('genders', genders)
+                ]:
+                    cur.execute("""
+                        INSERT INTO company_settings (setting_key, setting_value)
+                        VALUES (%s, %s)
+                        ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value,
+                            updated_at = CURRENT_TIMESTAMP;
+                    """, (key, val))
             conn.commit()
             flash("Company settings saved.", "success")
         finally:
