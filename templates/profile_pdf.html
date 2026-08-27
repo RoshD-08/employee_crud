@@ -90,9 +90,13 @@
                 <div style="font-size: 10pt; color: #2F6F63; margin-top: 3px; font-weight: bold;">EMP-{{ "%04d"|format(employee.id) }}</div>
             </td>
             <td style="width: 30%; text-align: right;" class="photo-cell">
-                <div style="width: 70px; height: 70px; background-color: #F7F8FA; border: 1px solid #E2E5EA; display: inline-block; text-align: center; line-height: 70px; color: #9ca3af; font-size: 8pt;">
-                    Photo
-                </div>
+                {% if employee.photo %}
+                    <img src="{{ base_dir }}/static/uploads/photos/{{ employee.photo }}" style="width: 70px; height: 70px; border: 1px solid #E2E5EA; display: inline-block;">
+                {% else %}
+                    <div style="width: 70px; height: 70px; background-color: #F7F8FA; border: 1px solid #E2E5EA; display: inline-block; text-align: center; line-height: 70px; color: #9ca3af; font-size: 8pt;">
+                        Photo
+                    </div>
+                {% endif %}
             </td>
         </tr>
     </table>
