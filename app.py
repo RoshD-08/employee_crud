@@ -195,7 +195,6 @@ def validate_employee_form(form):
     bank_account_number = form.get("bank_account_number", "").strip()
     tax_id = form.get("tax_id", "").strip()
     epf_number = form.get("epf_number", "").strip()
-    esi_number = form.get("esi_number", "").strip()
     tax_filing_status = form.get("tax_filing_status", "").strip()
     address = form.get("address", "").strip()
     latitude_raw = form.get("latitude", "").strip()
@@ -217,7 +216,6 @@ def validate_employee_form(form):
     if not employee_category: errors.append("Employee category is required.")
     if not tax_id: errors.append("Tax ID is required.")
     if not epf_number: errors.append("EPF Number is required.")
-    if not esi_number: errors.append("ESI Number is required.")
 
     salary_value = None
     if salary:
@@ -289,7 +287,7 @@ def validate_employee_form(form):
         "bank_name": bank_name or None, "bank_branch": bank_branch or None,
         "bank_account_number": bank_account_number or None,
         "tax_id": tax_id or None, "epf_number": epf_number or None,
-        "esi_number": esi_number or None, "tax_filing_status": tax_filing_status or None,
+        "tax_filing_status": tax_filing_status or None,
         "address": address, "latitude": picked_latitude, "longitude": picked_longitude,
     }
     return data, errors
@@ -305,7 +303,7 @@ _INSERT_COLS = [
     "salary", "housing_allowance", "transport_allowance", "medical_allowance", "other_allowance",
     "annual_leave_allowed", "casual_leave_allowed", "medical_leave_allowed",
     "payment_method", "bank_name", "bank_branch", "bank_account_number",
-    "tax_id", "epf_number", "esi_number", "tax_filing_status",
+    "tax_id", "epf_number", "tax_filing_status",
     "address", "latitude", "longitude",
     "photo",
 ]
@@ -422,8 +420,6 @@ def add_employee():
                         errors.append("An employee with that Tax ID already exists.")
                     elif "epf_number" in err_msg:
                         errors.append("An employee with that EPF Number already exists.")
-                    elif "esi_number" in err_msg:
-                        errors.append("An employee with that ESI Number already exists.")
                     else:
                         errors.append("A unique constraint violation occurred.")
                 finally:
@@ -495,8 +491,6 @@ def edit_employee(employee_id):
                         errors.append("An employee with that Tax ID already exists.")
                     elif "epf_number" in err_msg:
                         errors.append("An employee with that EPF Number already exists.")
-                    elif "esi_number" in err_msg:
-                        errors.append("An employee with that ESI Number already exists.")
                     else:
                         errors.append("A unique constraint violation occurred.")
                 finally:
