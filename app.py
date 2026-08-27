@@ -382,7 +382,20 @@ def add_employee():
                 file = request.files['photo']
                 if file and file.filename != '':
                     if allowed_file(file.filename):
-                        photo_filename = handle_photo_upload(file)
+                        from PIL import Image
+                        try:
+                            img = Image.open(file)
+                            width, height = img.size
+                            file.seek(0)
+                            if width != height:
+                                errors.append(f"Image must be square (current: {width}x{height}px).")
+                            elif width < 200 or width > 400:
+                                errors.append(f"Image dimensions must be between 200x200 and 400x400 pixels (current: {width}x{height}px).")
+                            else:
+                                photo_filename = handle_photo_upload(file)
+                        except Exception:
+                            file.seek(0)
+                            errors.append("Invalid image file.")
                     else:
                         errors.append("Invalid photo format. Only JPG, JPEG, and PNG are allowed.")
             
@@ -442,9 +455,22 @@ def edit_employee(employee_id):
                 file = request.files['photo']
                 if file and file.filename != '':
                     if allowed_file(file.filename):
-                        new_photo = handle_photo_upload(file)
-                        if new_photo:
-                            photo_filename = new_photo
+                        from PIL import Image
+                        try:
+                            img = Image.open(file)
+                            width, height = img.size
+                            file.seek(0)
+                            if width != height:
+                                errors.append(f"Image must be square (current: {width}x{height}px).")
+                            elif width < 200 or width > 400:
+                                errors.append(f"Image dimensions must be between 200x200 and 400x400 pixels (current: {width}x{height}px).")
+                            else:
+                                new_photo = handle_photo_upload(file)
+                                if new_photo:
+                                    photo_filename = new_photo
+                        except Exception:
+                            file.seek(0)
+                            errors.append("Invalid image file.")
                     else:
                         errors.append("Invalid photo format. Only JPG, JPEG, and PNG are allowed.")
 
