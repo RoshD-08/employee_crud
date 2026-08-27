@@ -39,6 +39,7 @@
     };
   </script>
 
+  
   <style>
     /* Subtle stamped-grid texture behind the header — a quiet nod to a paper roster/ledger */
     .roster-texture {
@@ -47,7 +48,26 @@
         linear-gradient(to bottom, #ffffff10 1px, transparent 1px);
       background-size: 22px 22px;
     }
+
+    /* Dark Mode Filter Hack */
+    html.dark-theme {
+      filter: invert(1) hue-rotate(180deg);
+      background-color: #080705; /* inverted paper */
+    }
+    
+    html.dark-theme img,
+    html.dark-theme .leaflet-container {
+      filter: invert(1) hue-rotate(180deg);
+    }
   </style>
+
+  <script>
+    // Check local storage for dark mode preference
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.classList.add('dark-theme');
+    }
+  </script>
+
 </head>
 <body class="bg-paper text-ink font-body antialiased min-h-screen flex flex-col">
 
