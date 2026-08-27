@@ -215,6 +215,9 @@ def validate_employee_form(form):
     if not employment_type: errors.append("Employment type is required.")
     if not employment_status: errors.append("Employment status is required.")
     if not employee_category: errors.append("Employee category is required.")
+    if not tax_id: errors.append("Tax ID is required.")
+    if not epf_number: errors.append("EPF Number is required.")
+    if not esi_number: errors.append("ESI Number is required.")
 
     salary_value = None
     if salary:
