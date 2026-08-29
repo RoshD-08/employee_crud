@@ -86,9 +86,9 @@
         <tr>
             <td style="width: 120px; vertical-align: top;">
                 {% if employee.photo %}
-                    <img src="{{ base_dir }}/static/uploads/photos/{{ employee.photo }}" style="width: 110px; height: 110px; border: 1px solid #E2E5EA;">
+                    <img src="{{ base_dir }}/static/uploads/photos/{{ employee.photo }}" style="width: 110px; height: 110px; border: 3px solid #2F6F63; border-radius: 55px; object-fit: cover;">
                 {% else %}
-                    <div style="width: 110px; height: 110px; background-color: #F7F8FA; border: 1px solid #E2E5EA; text-align: center; line-height: 110px; color: #9ca3af; font-size: 9pt;">
+                    <div style="width: 110px; height: 110px; background-color: #F7F8FA; border: 3px solid #2F6F63; border-radius: 55px; text-align: center; line-height: 110px; color: #9ca3af; font-size: 9pt; overflow: hidden;">
                         Photo
                     </div>
                 {% endif %}
